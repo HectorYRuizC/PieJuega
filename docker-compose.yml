@@ -1,0 +1,16 @@
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: piejuega_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: piejuega_db
+      POSTGRES_USER: piejuega
+      POSTGRES_PASSWORD: piejuega123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+volumes:
+  postgres_data:
