@@ -1,52 +1,50 @@
 package com.example.PieJuega.service;
 
+import com.example.PieJuega.exception.InvalidCredentialsException;
+import com.example.PieJuega.exception.ResourceAlreadyExistsException;
 import com.example.PieJuega.model.Role;
 import com.example.PieJuega.model.User;
 import com.example.PieJuega.repository.RoleRepository;
 import com.example.PieJuega.repository.UserRepository;
-import com.example.PieJuega.util.RoleName;
-import jakarta.transaction.Transactional;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class UserService {
+
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
-    public User registerUser(String username, String email, String password, boolean admin) {
-        // Verificar si el username o email ya existen
-        if (userRepository.findByUsername(username).isPresent()){
-            throw new RuntimeException("Username ya existe");
-        }
-        if(userRepository.findByEmail(email).isPresent()){
-            throw new RuntimeException("Email ya existe");
-        }
-        // Crear el usuario
+    public User registerUser(String username, String email, String password, String phone, boolean admin) {
+
+        if (userRepository.findByEmail(email).isPresent())
+            throw new ResourceAlreadyExistsException("Email already exists");
+        if (userRepository.findByPhone(phone).isPresent())
+            throw new ResourceAlreadyExistsException("phone already exists");
+
         User user = User.builder()
                 .username(username)
                 .email(email)
-                .password(password)
+                .phone(phone)
+                .password(passwordEncoder.encode(password))
                 .build();
-        // Asignar roles
+
         Set<Role> roles = new HashSet<>();
-        Optional<Role> userRole = roleRepository.findByName(RoleName.ROLE_USER.name());
-        userRole.ifPresent(roles::add);
+        roleRepository.findByName("ROLE_USER").ifPresent(roles::add);
 
-        if (admin) {
-            Optional<Role> adminRole = roleRepository.findByName(RoleName.ROLE_ADMIN.name());
-            adminRole.ifPresent(roles::add);
-        }
+        if (admin)
+            roleRepository.findByName("ROLE_ADMIN").ifPresent(roles::add);
 
-        // Guardar usuario en la DB
         user.setRoles(roles);
-        return userRepository.save(user);
 
+        return userRepository.save(user);
     }
 }

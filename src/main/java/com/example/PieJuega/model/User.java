@@ -13,6 +13,8 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@ToString(exclude = "roles") // 🔹 Evita ciclo infinito
+@EqualsAndHashCode(exclude = "roles") // 🔹 evitar recursión en hashCode()
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,6 +25,9 @@ public class User {
 
     @Column(nullable = false, unique = true)
     private String email;
+
+    @Column(unique = true)
+    private String phone;
 
     @Column(nullable = false)
     private String password;

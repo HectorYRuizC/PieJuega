@@ -2,10 +2,12 @@ package com.example.PieJuega.dto;
 
 import lombok.Data;
 
+import java.util.Set;
+
 @Data
-public class UserRegisterDTO {
+public class UserResponseDTO {
+    private Long id;
     private String username;
     private String email;
-    private String password;
-    private boolean admin;
+    private Set<String> roles;
 }
