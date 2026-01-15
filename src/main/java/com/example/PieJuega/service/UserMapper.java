@@ -12,6 +12,8 @@ public class UserMapper {
         response.setId(user.getId());
         response.setUsername(user.getUsername());
         response.setEmail(user.getEmail());
+        response.setPhone(user.getPhone());
+        response.setDateBirth(user.getDateBirth());
         response.setRoles(user.getRoles()
                 .stream()
                 .map(role -> role.getName())

@@ -43,6 +43,7 @@ public class AuthController {
                 request.getEmail(),
                 request.getPassword(),
                 request.getPhone(),
+                request.getDateBirth(),
                 request.isAdmin()
         );
         return ResponseEntity.ok(UserMapper.toDTO(user));

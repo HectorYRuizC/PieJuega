@@ -11,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -23,7 +24,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
-    public User registerUser(String username, String email, String password, String phone, boolean admin) {
+    public User registerUser(String username, String email, String password, String phone, LocalDate dateBirth, boolean admin) {
 
         if (userRepository.findByEmail(email).isPresent())
             throw new ResourceAlreadyExistsException("Email already exists");
@@ -34,6 +35,7 @@ public class UserService {
                 .username(username)
                 .email(email)
                 .phone(phone)
+                .dateBirth(dateBirth)
                 .password(passwordEncoder.encode(password))
                 .build();
 
