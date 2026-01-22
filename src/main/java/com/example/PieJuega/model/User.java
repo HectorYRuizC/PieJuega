@@ -31,7 +31,7 @@ public class User {
     @Column(unique = true)
     private String phone;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private LocalDate dateBirth;
 
     @Column(nullable = false)

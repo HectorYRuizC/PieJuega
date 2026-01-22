@@ -90,20 +90,20 @@
 
 
         <!-- FASE 3: OAuth2 -->
-        <!--
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-oauth2-client</artifactId>
         </dependency>
-        -->
+
 
         <!-- FASE 4: Email -->
-        <!--
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
-        -->
+
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
