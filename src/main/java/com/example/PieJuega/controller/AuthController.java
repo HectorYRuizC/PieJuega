@@ -1,22 +1,15 @@
 package com.example.PieJuega.controller;
 
 import com.example.PieJuega.dto.*;
-import com.example.PieJuega.exception.InvalidCredentialsException;
 import com.example.PieJuega.model.User;
 import com.example.PieJuega.service.AuthService;
-import com.example.PieJuega.service.UserMapper;
+import com.example.PieJuega.mapper.UserMapper;
 import com.example.PieJuega.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import com.example.PieJuega.security.UserDetailsImpl;
 
-import java.util.Set;
-import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -48,5 +41,15 @@ public class AuthController {
         );
         return ResponseEntity.ok(UserMapper.toDTO(user));
     }
+
+    @PostMapping("/google")
+    public ResponseEntity<AuthResponseDTO> googleLogin(
+            @Valid @RequestBody GoogleLoginRequestDTO request) {
+
+        return ResponseEntity.ok(
+                authService.loginWithGoogle(request.getIdToken())
+        );
+    }
+
 }
 

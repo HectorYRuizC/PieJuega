@@ -64,13 +64,13 @@ public class SecurityConfig {
                 // 🔑 Login clásico (email / phone + password)
                 .authenticationProvider(authenticationProvider())
 
-                // 🌐 OAuth2 Login (Google)
-                .oauth2Login(oauth2 -> oauth2
-                        .userInfoEndpoint(userInfo -> userInfo
-                                .userService(customOAuth2UserService) // TU servicio
-                        )
-                        .successHandler(oAuth2SuccessHandler) // genera JWT
-                )
+//                // 🌐 OAuth2 Login (Google)
+//                .oauth2Login(oauth2 -> oauth2
+//                        .userInfoEndpoint(userInfo -> userInfo
+//                                .userService(customOAuth2UserService) // TU servicio
+//                        )
+//                        .successHandler(oAuth2SuccessHandler) // genera JWT
+//                )
 
                 // 🧾 JWT Filter
                 .addFilterBefore(
