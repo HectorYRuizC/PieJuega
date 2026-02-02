@@ -192,7 +192,10 @@ public class AuthService {
         }
 
         // Número de teléfono (opcional)
-        String phone = (String) payload.get("phone_number"); // si no existe, queda null
+        String phone = payload.get("phone_number") != null
+                ? payload.get("phone_number").toString()
+                : ""; // si no existe, queda vacio
+
 
         User user = User.builder()
                 .email(email)
