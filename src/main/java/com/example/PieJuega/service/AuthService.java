@@ -22,6 +22,7 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.example.PieJuega.mapper.UserMapper;
 
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -120,7 +121,7 @@ public class AuthService {
         String name = (String) payload.get("name");
 
         User user = userRepository.findByEmail(email)
-                .orElseGet(() -> createGoogleUser(email, name));
+                .orElseGet(() -> createGoogleUser(email, name,payload));
 
         Set<String> roles = user.getRoles()
                 .stream()
@@ -179,14 +180,26 @@ public class AuthService {
         return response;
     }
 
-    private User createGoogleUser(String email, String name) {
+    private User createGoogleUser(String email, String name, GoogleIdToken.Payload payload) {
         Role roleUser = roleRepository.findByName("ROLE_USER")
                 .orElseThrow(() -> new RuntimeException("ROLE_USER no existe"));
+
+        // Fecha de cumpleaños (viene como YYYY-MM-DD)
+        LocalDate birthDate = null;
+        String birthDateStr = (String) payload.get("birthdate"); // este campo viene por el scope
+        if (birthDateStr != null) {
+            birthDate = LocalDate.parse(birthDateStr);
+        }
+
+        // Número de teléfono (opcional)
+        String phone = (String) payload.get("phone_number"); // si no existe, queda null
 
         User user = User.builder()
                 .email(email)
                 .username(name)
                 .password("") // OAuth
+                .dateBirth(birthDate)
+                .phone(phone)
                 .roles(Set.of(roleUser))
                 .build();
 
