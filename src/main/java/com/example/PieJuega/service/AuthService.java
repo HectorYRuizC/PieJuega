@@ -135,50 +135,54 @@ public class AuthService {
        REFRESH TOKEN
        ========================= */
     public AuthResponseDTO refresh(String refreshToken) {
-        String email = jwtService.extractEmail(refreshToken);
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new InvalidCredentialsException("Usuario no encontrado"));
-
-        if (!jwtService.isTokenValid(refreshToken,email)) {
+        // Validación básica del token
+        if (!jwtService.isTokenValid(refreshToken)) {
             throw new InvalidCredentialsException("Refresh token inválido");
         }
+
+        // Extraer userId del token
+        Long userId = jwtService.extractUserId(refreshToken);
+
+        // Buscar usuario por ID
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new InvalidCredentialsException("Usuario no encontrado"));
+
+        // Validación fuerte (token ↔ usuario)
+        if (!jwtService.isTokenValid(refreshToken, user.getId())) {
+            throw new InvalidCredentialsException("Refresh token inválido");
+        }
+
+        // Usar buildAuthResponse para generar tokens y el DTO
+        return buildAuthResponse(user);
+    }
+
+    /* =========================
+       HELPERS - genera el token
+       ========================= */
+    private AuthResponseDTO buildAuthResponse(User user) {
 
         Set<String> roles = user.getRoles()
                 .stream()
                 .map(Role::getName)
                 .collect(Collectors.toSet());
 
-        String newAccessToken = jwtService.generateAccessToken(
+        String accessToken = jwtService.generateAccessToken(
                 user.getId(),
                 user.getEmail(),
                 roles
         );
 
-        AuthResponseDTO response = new AuthResponseDTO();
-        response.setAccessToken(newAccessToken);
-        response.setRefreshToken(refreshToken);
-
-        return response;
-    }
-
-    /* =========================
-       HELPERS
-       ========================= */
-    private AuthResponseDTO generateTokens(Long id, String email, Collection<?> authorities) {
-
-        Set<String> roles = authorities.stream()
-                .map(Object::toString)
-                .collect(Collectors.toSet());
-
-        String accessToken = jwtService.generateAccessToken(id, email, roles);
-        String refreshToken = jwtService.generateRefreshToken(email);
+        String refreshToken = jwtService.generateRefreshToken(user.getId());
 
         AuthResponseDTO response = new AuthResponseDTO();
         response.setAccessToken(accessToken);
         response.setRefreshToken(refreshToken);
+        response.setUser(UserMapper.toDTO(user));
 
         return response;
     }
+
+
 
     private User createGoogleUser(String email, String name, LocalDate dateBirth, String phone) {
         Role roleUser = roleRepository.findByName("ROLE_USER")
@@ -199,28 +203,7 @@ public class AuthService {
 
 
 
-    private AuthResponseDTO buildAuthResponse(User user) {
 
-        Set<String> roles = user.getRoles()
-                .stream()
-                .map(Role::getName)
-                .collect(Collectors.toSet());
-
-        String accessToken = jwtService.generateAccessToken(
-                user.getId(),
-                user.getEmail(),
-                roles
-        );
-
-        String refreshToken = jwtService.generateRefreshToken(user.getEmail());
-
-        AuthResponseDTO response = new AuthResponseDTO();
-        response.setAccessToken(accessToken);
-        response.setRefreshToken(refreshToken);
-        response.setUser(UserMapper.toDTO(user));
-
-        return response;
-    }
 
 
 

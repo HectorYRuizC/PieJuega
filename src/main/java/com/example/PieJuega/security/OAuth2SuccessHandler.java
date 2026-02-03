@@ -39,7 +39,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         );
 
         String refreshToken = jwtService.generateRefreshToken(
-                userDetails.getUsername()
+                userDetails.getId()
         );
 
         // Respuesta simple en JSON

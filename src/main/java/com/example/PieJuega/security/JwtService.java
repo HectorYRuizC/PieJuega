@@ -27,8 +27,8 @@ public class JwtService {
 
     public String generateAccessToken(Long userId, String email, Set<String> roles) {
         return Jwts.builder()
-                .setSubject(email)
-                .claim("id", userId)
+                .setSubject(userId.toString())
+                .claim("email", email)
                 .claim("roles", roles)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + accessExpiration))
@@ -36,23 +36,35 @@ public class JwtService {
                 .compact();
     }
 
-    public String generateRefreshToken(String email) {
+    public String generateRefreshToken(Long userId) {
         return Jwts.builder()
-                .setSubject(email)
+                .setSubject(userId.toString())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + refreshExpiration))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    public String extractEmail(String token) {
-        return parseClaims(token).getSubject();
+    public Long extractUserId(String token) {
+        return Long.valueOf(parseClaims(token).getSubject());
     }
 
-    public boolean isTokenValid(String token, String email) {
+    public String extractEmail(String token) {
+        return parseClaims(token).get("email", String.class);
+    }
+
+    public boolean isTokenValid(String token) {
         try {
-            String tokenEmail = extractEmail(token);
-            return tokenEmail.equals(email) && !isTokenExpired(token);
+            return !isTokenExpired(token);
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    public boolean isTokenValid(String token, Long userId) {
+        try {
+            Long tokenUserId = extractUserId(token);
+            return tokenUserId.equals(userId) && !isTokenExpired(token);
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }

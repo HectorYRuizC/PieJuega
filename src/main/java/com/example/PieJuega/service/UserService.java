@@ -66,17 +66,60 @@ public class UserService {
 
 
 
+    @Transactional
     public UserResponseDTO updateProfile(Long userId, UserUpdateRequestDTO request) {
+
         User user = getUserOrThrow(userId);
 
-        if (request.getUsername() != null) user.setUsername(request.getUsername());
-        if (request.getEmail() != null) user.setEmail(request.getEmail());
-        if (request.getPhone() != null) user.setPhone(request.getPhone());
-        if (request.getDateBirth() != null) user.setDateBirth(request.getDateBirth());
+        validateEmailUpdate(userId, request.getEmail());
+        validatePhoneUpdate(userId, request.getPhone());
 
-        userRepository.save(user);
-        return UserMapper.toDTO(user);
+        if (request.getUsername() != null) {
+            user.setUsername(request.getUsername());
+        }
+
+        if (request.getEmail() != null) {
+            user.setEmail(request.getEmail());
+        }
+
+        if (request.getPhone() != null) {
+            user.setPhone(request.getPhone());
+        }
+
+        if (request.getDateBirth() != null) {
+            user.setDateBirth(request.getDateBirth());
+        }
+
+        return UserMapper.toDTO(userRepository.save(user));
     }
+
+    private void validateEmailUpdate(Long userId, String newEmail) {
+
+        if (newEmail == null || newEmail.isBlank()) {
+            return;
+        }
+
+        userRepository.findByEmail(newEmail)
+                .filter(u -> !u.getId().equals(userId))
+                .ifPresent(u -> {
+                    throw new IllegalStateException("El correo electrónico ya está en uso");
+                });
+    }
+
+
+    private void validatePhoneUpdate(Long userId, String newPhone) {
+
+        if (newPhone == null || newPhone.isBlank()) {
+            return;
+        }
+
+        userRepository.findByPhone(newPhone)
+                .filter(u -> !u.getId().equals(userId))
+                .ifPresent(u -> {
+                    throw new IllegalStateException("El número de teléfono ya está en uso");
+                });
+    }
+
 
     public void changePassword(Long userId, ChangePasswordRequestDTO request) {
         User user = getUserOrThrow(userId);

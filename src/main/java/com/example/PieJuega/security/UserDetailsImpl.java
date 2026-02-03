@@ -20,7 +20,7 @@ public class UserDetailsImpl implements UserDetails, OAuth2User {
     // Map para atributos OAuth2
     private Map<String, Object> attributes;
 
-    private UserDetailsImpl(Long id, String email, String password, Set<String> roles) {
+    private     UserDetailsImpl(Long id, String email, String password, Set<String> roles) {
         this.id = id;
         this.email = email;
         this.password = password;
