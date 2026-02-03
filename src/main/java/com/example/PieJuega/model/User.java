@@ -1,5 +1,6 @@
 package com.example.PieJuega.model;
 
+import com.example.PieJuega.util.AuthProvider;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.*;
@@ -33,6 +34,10 @@ public class User {
 
     @Column(nullable = true)
     private LocalDate dateBirth;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private AuthProvider authProvider;
 
     @Column(nullable = false)
     private String password;

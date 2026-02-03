@@ -8,6 +8,7 @@ import com.example.PieJuega.repository.RoleRepository;
 import com.example.PieJuega.repository.UserRepository;
 import com.example.PieJuega.security.JwtService;
 import com.example.PieJuega.security.UserDetailsImpl;
+import com.example.PieJuega.util.AuthProvider;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
@@ -192,7 +193,8 @@ public class AuthService {
         User user = User.builder()
                 .email(email)
                 .username(name)
-                .password("") // OAuth
+                .password(null) // ✅ correcto para OAuth
+                .authProvider(AuthProvider.GOOGLE) // 🔑 CLAVE
                 .dateBirth(dateBirth)
                 .phone(phone)
                 .roles(Set.of(roleUser))

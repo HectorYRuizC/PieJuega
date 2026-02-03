@@ -1,5 +1,6 @@
 package com.example.PieJuega.dto;
 
+import com.example.PieJuega.util.AuthProvider;
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -12,5 +13,6 @@ public class UserResponseDTO {
     private String email;
     private String phone;
     private LocalDate dateBirth;
+    private AuthProvider authProvider;
     private Set<String> roles;
 }

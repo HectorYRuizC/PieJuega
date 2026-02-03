@@ -10,6 +10,7 @@ import com.example.PieJuega.model.Role;
 import com.example.PieJuega.model.User;
 import com.example.PieJuega.repository.RoleRepository;
 import com.example.PieJuega.repository.UserRepository;
+import com.example.PieJuega.util.AuthProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -45,6 +46,7 @@ public class UserService {
                 .email(email)
                 .phone(phone)
                 .dateBirth(dateBirth)
+                .authProvider(AuthProvider.LOCAL) //
                 .password(passwordEncoder.encode(password))
                 .build();
 
