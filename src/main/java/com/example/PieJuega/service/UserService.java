@@ -1,7 +1,11 @@
 package com.example.PieJuega.service;
 
+import com.example.PieJuega.dto.ChangePasswordRequestDTO;
+import com.example.PieJuega.dto.UserResponseDTO;
+import com.example.PieJuega.dto.UserUpdateRequestDTO;
 import com.example.PieJuega.exception.InvalidCredentialsException;
 import com.example.PieJuega.exception.ResourceAlreadyExistsException;
+import com.example.PieJuega.mapper.UserMapper;
 import com.example.PieJuega.model.Role;
 import com.example.PieJuega.model.User;
 import com.example.PieJuega.repository.RoleRepository;
@@ -22,6 +26,11 @@ public class UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+
+    public UserResponseDTO getProfile(Long userId) {
+        User user = getUserOrThrow(userId);
+        return UserMapper.toDTO(user);
+    }
 
     @Transactional
     public User registerUser(String username, String email, String password, String phone, LocalDate dateBirth, boolean admin) {
@@ -49,4 +58,41 @@ public class UserService {
 
         return userRepository.save(user);
     }
+
+    private User getUserOrThrow(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+    }
+
+
+
+    public UserResponseDTO updateProfile(Long userId, UserUpdateRequestDTO request) {
+        User user = getUserOrThrow(userId);
+
+        if (request.getUsername() != null) user.setUsername(request.getUsername());
+        if (request.getEmail() != null) user.setEmail(request.getEmail());
+        if (request.getPhone() != null) user.setPhone(request.getPhone());
+        if (request.getDateBirth() != null) user.setDateBirth(request.getDateBirth());
+
+        userRepository.save(user);
+        return UserMapper.toDTO(user);
+    }
+
+    public void changePassword(Long userId, ChangePasswordRequestDTO request) {
+        User user = getUserOrThrow(userId);
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new InvalidCredentialsException("Contraseña actual incorrecta");
+        }
+
+        if (!request.getNewPassword().equals(request.getConfirmNewPassword())) {
+            throw new InvalidCredentialsException("Las contraseñas no coinciden");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+    }
+
+
+
 }

@@ -47,7 +47,7 @@ public class AuthController {
             @Valid @RequestBody GoogleLoginRequestDTO request) {
 
         return ResponseEntity.ok(
-                authService.loginWithGoogle(request.getIdToken())
+                authService.loginWithGoogle(request.getIdToken(), request.getDateBirth(), request.getPhone())
         );
     }
 

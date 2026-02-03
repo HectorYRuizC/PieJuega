@@ -89,7 +89,7 @@ public class AuthService {
     /* =========================
        LOGIN GOOGLE (MÓVIL)
        ========================= */
-    public AuthResponseDTO loginWithGoogle(String idTokenString) {
+    public AuthResponseDTO loginWithGoogle(String idTokenString, LocalDate dateBirth, String phone) {
 
         GoogleIdTokenVerifier verifier =
                 new GoogleIdTokenVerifier.Builder(
@@ -121,7 +121,7 @@ public class AuthService {
         String name = (String) payload.get("name");
 
         User user = userRepository.findByEmail(email)
-                .orElseGet(() -> createGoogleUser(email, name,payload));
+                .orElseGet(() -> createGoogleUser(email, name,dateBirth,phone));
 
         Set<String> roles = user.getRoles()
                 .stream()
@@ -180,28 +180,16 @@ public class AuthService {
         return response;
     }
 
-    private User createGoogleUser(String email, String name, GoogleIdToken.Payload payload) {
+    private User createGoogleUser(String email, String name, LocalDate dateBirth, String phone) {
         Role roleUser = roleRepository.findByName("ROLE_USER")
                 .orElseThrow(() -> new RuntimeException("ROLE_USER no existe"));
-
-        // Fecha de cumpleaños (viene como YYYY-MM-DD)
-        LocalDate birthDate = null;
-        String birthDateStr = (String) payload.get("birthdate"); // este campo viene por el scope
-        if (birthDateStr != null) {
-            birthDate = LocalDate.parse(birthDateStr);
-        }
-
-        // Número de teléfono (opcional)
-        String phone = payload.get("phone_number") != null
-                ? payload.get("phone_number").toString()
-                : ""; // si no existe, queda vacio
 
 
         User user = User.builder()
                 .email(email)
                 .username(name)
                 .password("") // OAuth
-                .dateBirth(birthDate)
+                .dateBirth(dateBirth)
                 .phone(phone)
                 .roles(Set.of(roleUser))
                 .build();
