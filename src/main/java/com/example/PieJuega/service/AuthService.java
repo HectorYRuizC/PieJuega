@@ -2,8 +2,10 @@ package com.example.PieJuega.service;
 
 import com.example.PieJuega.dto.AuthResponseDTO;
 import com.example.PieJuega.exception.InvalidCredentialsException;
+import com.example.PieJuega.model.RevokedToken;
 import com.example.PieJuega.model.Role;
 import com.example.PieJuega.model.User;
+import com.example.PieJuega.repository.RevokedTokenRepository;
 import com.example.PieJuega.repository.RoleRepository;
 import com.example.PieJuega.repository.UserRepository;
 import com.example.PieJuega.security.JwtService;
@@ -23,6 +25,7 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.example.PieJuega.mapper.UserMapper;
 
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
@@ -36,6 +39,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final RevokedTokenRepository revokedTokenRepository;
 
     @Value("${google.client-id.android}")
     private String googleClientIdAndroid;
@@ -136,26 +140,33 @@ public class AuthService {
        REFRESH TOKEN
        ========================= */
     public AuthResponseDTO refresh(String refreshToken) {
-        // Validación básica del token
+
+        // 1️ Verificar si el token fue revocado
+        if (revokedTokenRepository.existsByToken(refreshToken)) {
+            throw new InvalidCredentialsException("Refresh token revocado");
+        }
+
+        // 2️ Validación básica del token (firma, expiración)
         if (!jwtService.isTokenValid(refreshToken)) {
             throw new InvalidCredentialsException("Refresh token inválido");
         }
 
-        // Extraer userId del token
+        // 3️ Extraer userId del token
         Long userId = jwtService.extractUserId(refreshToken);
 
-        // Buscar usuario por ID
+        // 4️ Buscar usuario por ID
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new InvalidCredentialsException("Usuario no encontrado"));
 
-        // Validación fuerte (token ↔ usuario)
+        // 5️ Validación fuerte (token ↔ usuario)
         if (!jwtService.isTokenValid(refreshToken, user.getId())) {
             throw new InvalidCredentialsException("Refresh token inválido");
         }
 
-        // Usar buildAuthResponse para generar tokens y el DTO
+        // 6️ Generar nuevo access token (refresh se reutiliza)
         return buildAuthResponse(user);
     }
+
 
     /* =========================
        HELPERS - genera el token
@@ -193,7 +204,7 @@ public class AuthService {
         User user = User.builder()
                 .email(email)
                 .username(name)
-                .password(null) // ✅ correcto para OAuth
+                .password("") // ✅ correcto para OAuth
                 .authProvider(AuthProvider.GOOGLE) // 🔑 CLAVE
                 .dateBirth(dateBirth)
                 .phone(phone)
@@ -203,6 +214,24 @@ public class AuthService {
         return userRepository.save(user);
     }
 
+
+    public void logout(String refreshToken) {
+
+        if (!jwtService.isTokenValid(refreshToken)) {
+            return; // token inválido → nada que revocar
+        }
+
+        if (revokedTokenRepository.existsByToken(refreshToken)) {
+            return; // ya fue revocado
+        }
+
+        revokedTokenRepository.save(
+                RevokedToken.builder()
+                        .token(refreshToken)
+                        .revokedAt(Instant.now())
+                        .build()
+        );
+    }
 
 
 

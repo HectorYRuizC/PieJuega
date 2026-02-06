@@ -13,6 +13,8 @@ public class UserResponseDTO {
     private String email;
     private String phone;
     private LocalDate dateBirth;
+    private String photoUrl;
     private AuthProvider authProvider;
     private Set<String> roles;
+
 }

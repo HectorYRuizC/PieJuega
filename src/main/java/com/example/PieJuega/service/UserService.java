@@ -92,6 +92,10 @@ public class UserService {
             user.setDateBirth(request.getDateBirth());
         }
 
+        if (request.getPhotoUrl() != null) {
+            user.setPhotoUrl(request.getPhotoUrl());
+        }
+
         return UserMapper.toDTO(userRepository.save(user));
     }
 

@@ -51,5 +51,12 @@ public class AuthController {
         );
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(
+            @RequestBody LogoutRequestDTO request
+    ) {
+        authService.logout(request.getRefreshToken());
+        return ResponseEntity.noContent().build();
+    }
 }
 
