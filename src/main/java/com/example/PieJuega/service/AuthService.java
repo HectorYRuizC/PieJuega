@@ -94,7 +94,7 @@ public class AuthService {
     /* =========================
        LOGIN GOOGLE (MÓVIL)
        ========================= */
-    public AuthResponseDTO loginWithGoogle(String idTokenString, LocalDate dateBirth, String phone) {
+    public AuthResponseDTO loginWithGoogle(String idTokenString, LocalDate dateBirth, String phone, String photoUrl) {
 
         GoogleIdTokenVerifier verifier =
                 new GoogleIdTokenVerifier.Builder(
@@ -126,7 +126,7 @@ public class AuthService {
         String name = (String) payload.get("name");
 
         User user = userRepository.findByEmail(email)
-                .orElseGet(() -> createGoogleUser(email, name,dateBirth,phone));
+                .orElseGet(() -> createGoogleUser(email, name,dateBirth,phone,photoUrl));
 
         Set<String> roles = user.getRoles()
                 .stream()
@@ -196,7 +196,7 @@ public class AuthService {
 
 
 
-    private User createGoogleUser(String email, String name, LocalDate dateBirth, String phone) {
+    private User createGoogleUser(String email, String name, LocalDate dateBirth, String phone, String photoUrl) {
         Role roleUser = roleRepository.findByName("ROLE_USER")
                 .orElseThrow(() -> new RuntimeException("ROLE_USER no existe"));
 
@@ -208,6 +208,7 @@ public class AuthService {
                 .authProvider(AuthProvider.GOOGLE) // 🔑 CLAVE
                 .dateBirth(dateBirth)
                 .phone(phone)
+                .photoUrl(photoUrl)
                 .roles(Set.of(roleUser))
                 .build();
 

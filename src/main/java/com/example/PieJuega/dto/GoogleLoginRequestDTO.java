@@ -16,4 +16,5 @@ public class GoogleLoginRequestDTO {
     private String phone;
     @JsonFormat(pattern = "dd/MM/yyyy")
     private LocalDate dateBirth;
+    private String photoUrl;
 }
