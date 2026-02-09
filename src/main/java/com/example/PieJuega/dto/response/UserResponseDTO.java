@@ -1,4 +1,4 @@
-package com.example.PieJuega.dto;
+package com.example.PieJuega.dto.response;
 
 import com.example.PieJuega.util.AuthProvider;
 import lombok.Data;

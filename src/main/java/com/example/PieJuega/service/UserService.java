@@ -1,8 +1,8 @@
 package com.example.PieJuega.service;
 
-import com.example.PieJuega.dto.ChangePasswordRequestDTO;
-import com.example.PieJuega.dto.UserResponseDTO;
-import com.example.PieJuega.dto.UserUpdateRequestDTO;
+import com.example.PieJuega.dto.request.ChangePasswordRequestDTO;
+import com.example.PieJuega.dto.response.UserResponseDTO;
+import com.example.PieJuega.dto.request.UserUpdateRequestDTO;
 import com.example.PieJuega.exception.InvalidCredentialsException;
 import com.example.PieJuega.exception.ResourceAlreadyExistsException;
 import com.example.PieJuega.mapper.UserMapper;
@@ -84,7 +84,7 @@ public class UserService {
             user.setEmail(request.getEmail());
         }
 
-        if (request.getPhone() != null) {
+        if (request.getPhone() != null ) {
             user.setPhone(request.getPhone());
         }
 

@@ -1,6 +1,6 @@
 package com.example.PieJuega.service;
 
-import com.example.PieJuega.dto.AuthResponseDTO;
+import com.example.PieJuega.dto.response.AuthResponseDTO;
 import com.example.PieJuega.exception.InvalidCredentialsException;
 import com.example.PieJuega.model.RevokedToken;
 import com.example.PieJuega.model.Role;
@@ -27,7 +27,6 @@ import com.example.PieJuega.mapper.UserMapper;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;

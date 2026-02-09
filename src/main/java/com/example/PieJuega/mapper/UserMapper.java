@@ -1,6 +1,6 @@
 package com.example.PieJuega.mapper;
 
-import com.example.PieJuega.dto.UserResponseDTO;
+import com.example.PieJuega.dto.response.UserResponseDTO;
 import com.example.PieJuega.model.User;
 
 import java.util.stream.Collectors;

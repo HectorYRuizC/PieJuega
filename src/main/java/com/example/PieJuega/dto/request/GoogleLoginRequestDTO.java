@@ -1,4 +1,4 @@
-package com.example.PieJuega.dto;
+package com.example.PieJuega.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotBlank;

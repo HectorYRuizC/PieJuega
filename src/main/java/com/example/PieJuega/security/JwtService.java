@@ -50,7 +50,7 @@ public class JwtService {
     }
 
     public String extractEmail(String token) {
-        return parseClaims(token).get("email", String.class);
+        return parseClaims(token).get("sub", String.class);
     }
 
     public boolean isTokenValid(String token) {
@@ -82,4 +82,26 @@ public class JwtService {
                 .parseClaimsJws(token)
                 .getBody();
     }
+
+
+
+
+
+    public String generatePasswordResetToken(String email) {
+        return Jwts.builder()
+                .setSubject(email)
+                .claim("type", "PASSWORD_RESET")
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + 10 * 60 * 1000)) // 10 min
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+
+
+    public boolean isPasswordResetToken(String token) {
+        Claims claims = parseClaims(token);
+        return "PASSWORD_RESET".equals(claims.get("type"));
+    }
+
 }

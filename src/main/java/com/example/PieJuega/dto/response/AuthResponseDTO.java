@@ -1,4 +1,4 @@
-package com.example.PieJuega.dto;
+package com.example.PieJuega.dto.response;
 
 import lombok.Data;
 

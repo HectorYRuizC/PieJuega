@@ -1,4 +1,4 @@
-package com.example.PieJuega.dto;
+package com.example.PieJuega.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.Email;
@@ -19,7 +19,7 @@ public class UserRegisterRequestDTO {
     private String email;
 
 
-    private String phone; // opcional
+    private String phone;
 
 
     @NotNull
@@ -30,5 +30,5 @@ public class UserRegisterRequestDTO {
     private String password;
 
     @NotNull
-    private boolean admin; // true si será admin
+    private boolean admin;
 }

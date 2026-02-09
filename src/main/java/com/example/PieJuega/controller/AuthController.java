@@ -1,14 +1,21 @@
 package com.example.PieJuega.controller;
 
-import com.example.PieJuega.dto.*;
+import com.example.PieJuega.dto.request.PasswordRecoveryVerifyDTO;
+import com.example.PieJuega.dto.request.PasswordResetDTO;
+import com.example.PieJuega.dto.request.*;
+import com.example.PieJuega.dto.response.AuthResponseDTO;
+import com.example.PieJuega.dto.response.UserResponseDTO;
 import com.example.PieJuega.model.User;
 import com.example.PieJuega.service.AuthService;
 import com.example.PieJuega.mapper.UserMapper;
+import com.example.PieJuega.service.PasswordRecoveryService;
 import com.example.PieJuega.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -17,6 +24,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final UserService userService;
+    private final PasswordRecoveryService service;
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDTO> login(@Valid @RequestBody UserLoginRequestDTO request) {
@@ -58,5 +66,41 @@ public class AuthController {
         authService.logout(request.getRefreshToken());
         return ResponseEntity.noContent().build();
     }
+
+
+
+
+
+
+
+    @PostMapping("/request")
+    public ResponseEntity<?> request(
+            @RequestBody @Valid PasswordRecoveryRequestDTO dto
+    ) {
+        service.requestRecovery(dto.getEmail());
+        return ResponseEntity.ok(
+                Map.of("message", "Si el correo existe, se enviará un código")
+        );
+    }
+
+    @PostMapping("/verify")
+    public ResponseEntity<?> verify(
+            @RequestBody @Valid PasswordRecoveryVerifyDTO dto
+    ) {
+        String resetToken = service.verifyCode(dto.getEmail(), dto.getCode());
+        return ResponseEntity.ok(Map.of("resetToken", resetToken));
+    }
+
+    @PostMapping("/reset")
+    public ResponseEntity<Void> reset(
+            @RequestBody @Valid PasswordResetDTO dto
+    ) {
+        service.resetPassword(dto.getToken(), dto);
+        return ResponseEntity.noContent().build();
+    }
+
+
+
+
 }
 

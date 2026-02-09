@@ -1,10 +1,11 @@
 package com.example.PieJuega.controller;
 
-import com.example.PieJuega.dto.ChangePasswordRequestDTO;
-import com.example.PieJuega.dto.UserResponseDTO;
-import com.example.PieJuega.dto.UserUpdateRequestDTO;
+import com.example.PieJuega.dto.request.ChangePasswordRequestDTO;
+import com.example.PieJuega.dto.response.UserResponseDTO;
+import com.example.PieJuega.dto.request.UserUpdateRequestDTO;
 import com.example.PieJuega.security.UserDetailsImpl;
 import com.example.PieJuega.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -27,7 +28,7 @@ public class UserController {
     @PutMapping("/me")
     public ResponseEntity<UserResponseDTO> updateProfile(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @RequestBody UserUpdateRequestDTO request
+            @Valid @RequestBody UserUpdateRequestDTO request
     ) {
         return ResponseEntity.ok(
                 userService.updateProfile(userDetails.getId(), request)
