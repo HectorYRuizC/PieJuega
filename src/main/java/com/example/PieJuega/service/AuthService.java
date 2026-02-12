@@ -143,7 +143,7 @@ public class AuthService {
 
 
 
-    public AuthResponseDTO loginWithFacebook(String accessToken) {
+    public AuthResponseDTO loginWithFacebook(String accessToken, String photoUr) {
 
         String url = "https://graph.facebook.com/me?fields=id,name,email&access_token=" + accessToken;
 
@@ -166,7 +166,7 @@ public class AuthService {
         String name = body.get("name") != null ? body.get("name").toString() : "Facebook User";
 
         User user = userRepository.findByEmail(email)
-                .orElseGet(() -> createFacebookUser(email, name));
+                .orElseGet(() -> createFacebookUser(email, name, photoUr));
 
         return buildAuthResponse(user);
     }
@@ -293,7 +293,7 @@ public class AuthService {
 //    }
 
 
-    private User createFacebookUser(String email, String name) {
+    private User createFacebookUser(String email, String name, String photoUrl ) {
 
         Role roleUser = roleRepository.findByName("ROLE_USER")
                 .orElseThrow(() -> new RuntimeException("ROLE_USER no existe"));
@@ -302,6 +302,7 @@ public class AuthService {
                 .email(email)
                 .username(name)
                 .password("") // OAuth
+                .photoUrl(photoUrl)
                 .authProvider(AuthProvider.FACEBOOK)
                 .roles(Set.of(roleUser))
                 .build();

@@ -64,7 +64,7 @@ public class AuthController {
             @RequestBody @Valid FacebookLoginRequestDTO dto
     ) {
         return ResponseEntity.ok(
-                authService.loginWithFacebook(dto.getAccessToken())
+                authService.loginWithFacebook(dto.getAccessToken(), dto.getPhotoUrl())
         );
     }
 
