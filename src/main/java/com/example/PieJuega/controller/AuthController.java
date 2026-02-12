@@ -59,7 +59,7 @@ public class AuthController {
         );
     }
 
-    @PostMapping("/login/facebook")
+    @PostMapping("/facebook")
     public ResponseEntity<AuthResponseDTO> loginWithFacebook(
             @RequestBody @Valid FacebookLoginRequestDTO dto
     ) {
