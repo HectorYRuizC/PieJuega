@@ -30,10 +30,10 @@ public class PasswordRecoveryService {
 
         userRepository.findByEmail(email).ifPresent(user -> {
 
-            // invalidar códigos anteriores
-            codeRepository.findByEmailAndUsedFalse(email)
+            // 🔥 Revocar TODO lo anterior
+            codeRepository.findByEmailAndUsedFalseAndRevokedFalse(email)
                     .forEach(c -> {
-                        c.setUsed(true);
+                        c.setRevoked(true);
                         codeRepository.save(c);
                     });
 
@@ -42,16 +42,20 @@ public class PasswordRecoveryService {
             PasswordResetCode resetCode = PasswordResetCode.builder()
                     .email(email)
                     .code(code)
-                    .expiresAt(LocalDateTime.now().plusHours(1))
+                    .attempts(0)
                     .used(false)
+                    .revoked(false)
+                    .createdAt(LocalDateTime.now())
+                    .expiresAt(LocalDateTime.now().plusMinutes(10)) // ⏱ fuerte
                     .build();
 
             codeRepository.save(resetCode);
             emailService.sendPasswordRecoveryCode(email, code);
         });
 
-        // SIEMPRE responder OK
+        // Siempre OK (anti user-enumeration)
     }
+
 
     /* ===============================
        2. VERIFICAR CÓDIGO
@@ -59,15 +63,47 @@ public class PasswordRecoveryService {
     public String verifyCode(String email, String code) {
 
         PasswordResetCode resetCode = codeRepository
-                .findByEmailAndCodeAndUsedFalse(email, code)
-                .orElseThrow(() -> new RuntimeException("Código inválido"));
+                .findFirstByEmailAndUsedFalseAndRevokedFalse(email)
+                .orElse(null);
 
-        if (resetCode.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Código expirado");
+        if (resetCode == null) {
+            throw new RuntimeException("Código inválido");
         }
 
-        return jwtService.generatePasswordResetToken(email);
+        if (resetCode.getExpiresAt().isBefore(LocalDateTime.now())) {
+            resetCode.setRevoked(true);
+            codeRepository.save(resetCode);
+            throw new RuntimeException("Código inválido");
+        }
+
+
+        // 🔴 VALIDAR PRIMERO SI ES INCORRECTO
+        if (!resetCode.getCode().equals(code)) {
+
+            resetCode.setAttempts(resetCode.getAttempts() + 1);
+
+            if (resetCode.getAttempts() >= 5) {
+                resetCode.setRevoked(true);
+            }
+
+            codeRepository.save(resetCode);
+
+            throw new RuntimeException("Código inválido");
+        }
+
+        // 🟢 Código correcto
+        String token = jwtService.generatePasswordResetToken(email);
+
+        resetCode.setToken(token);
+
+        // 🔒 El código ya no puede reutilizarse
+        resetCode.setCode(null);
+
+        codeRepository.save(resetCode);
+
+        return token;
     }
+
 
     /* ===============================
        3. RESET CONTRASEÑA
@@ -78,33 +114,32 @@ public class PasswordRecoveryService {
             throw new RuntimeException("Las contraseñas no coinciden");
         }
 
-        // 1️ Validar token
-        if (!jwtService.isTokenValid(resetToken)) {
-            throw new RuntimeException("Token inválido o expirado");
+        if (!jwtService.isTokenValid(resetToken)
+                || !jwtService.isPasswordResetToken(resetToken)) {
+            throw new RuntimeException("Token inválido");
         }
 
-        // 2️ Validar que sea token de recuperación
-        if (!jwtService.isPasswordResetToken(resetToken)) {
-            throw new RuntimeException("Token no válido para recuperación de contraseña");
+        PasswordResetCode resetCode = codeRepository
+                .findByTokenAndUsedFalseAndRevokedFalse(resetToken)
+                .orElseThrow(() -> new RuntimeException("Token ya usado o inválido"));
+
+        if (resetCode.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Token expirado");
         }
 
-        // 3️ Extraer email
         String email = jwtService.extractEmail(resetToken);
 
-        // 4️ Buscar usuario
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        // 5️ Cambiar contraseña
         user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
         userRepository.save(user);
 
-        // 6️ Marcar códigos como usados
-        codeRepository.findByEmailAndUsedFalse(email)
-                .forEach(code -> {
-                    code.setUsed(true);
-                    codeRepository.save(code);
-                });
+        // 🔒 invalidar TODO
+        resetCode.setUsed(true);
+        resetCode.setRevoked(true);
+        codeRepository.save(resetCode);
     }
+
 
 }

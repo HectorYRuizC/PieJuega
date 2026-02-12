@@ -59,6 +59,19 @@ public class AuthController {
         );
     }
 
+    @PostMapping("/login/facebook")
+    public ResponseEntity<AuthResponseDTO> loginWithFacebook(
+            @RequestBody @Valid FacebookLoginRequestDTO dto
+    ) {
+        return ResponseEntity.ok(
+                authService.loginWithFacebook(dto.getAccessToken())
+        );
+    }
+
+
+
+
+
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(
             @RequestBody LogoutRequestDTO request
@@ -73,7 +86,7 @@ public class AuthController {
 
 
 
-    @PostMapping("/request")
+    @PostMapping("/recovety")
     public ResponseEntity<?> request(
             @RequestBody @Valid PasswordRecoveryRequestDTO dto
     ) {

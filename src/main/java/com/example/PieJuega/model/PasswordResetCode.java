@@ -1,9 +1,6 @@
 package com.example.PieJuega.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -17,15 +14,24 @@ import java.time.LocalDateTime;
 @Builder
 public class PasswordResetCode {
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String email;
 
     private String code;
 
-    private LocalDateTime expiresAt;
+    @Column(length = 500, unique = true)
+    private String token;
 
     private boolean used;
+
+    private boolean revoked;
+
+    private int attempts;
+
+    private LocalDateTime expiresAt;
+
+    private LocalDateTime createdAt;
 
 }

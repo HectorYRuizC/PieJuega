@@ -16,6 +16,9 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -23,11 +26,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.example.PieJuega.mapper.UserMapper;
+import org.springframework.web.client.RestTemplate;
 
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 @Service
@@ -135,6 +140,57 @@ public class AuthService {
         return buildAuthResponse(user);
     }
 
+
+
+
+    public AuthResponseDTO loginWithFacebook(String accessToken) {
+
+        String url = "https://graph.facebook.com/me?fields=id,name,email&access_token=" + accessToken;
+
+        RestTemplate restTemplate = new RestTemplate();
+
+        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                url,
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<>() {}
+        );
+
+        Map<String, Object> body = response.getBody();
+
+        if (body == null || body.get("email") == null) {
+            throw new RuntimeException("Facebook no proporcionó email válido");
+        }
+
+        String email = body.get("email").toString();
+        String name = body.get("name") != null ? body.get("name").toString() : "Facebook User";
+
+        User user = userRepository.findByEmail(email)
+                .orElseGet(() -> createFacebookUser(email, name));
+
+        return buildAuthResponse(user);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     /* =========================
        REFRESH TOKEN
        ========================= */
@@ -215,6 +271,58 @@ public class AuthService {
     }
 
 
+
+
+//    private User createFacebookUser(String email, String name, LocalDate dateBirth, String phone, String photoUrl) {
+//        Role roleUser = roleRepository.findByName("ROLE_USER")
+//                .orElseThrow(() -> new RuntimeException("ROLE_USER no existe"));
+//
+//
+//        User user = User.builder()
+//                .email(email)
+//                .username(name)
+//                .password("") // ✅ correcto para OAuth
+//                .authProvider(AuthProvider.FACEBOOK) // 🔑 CLAVE
+//                .dateBirth(dateBirth)
+//                .phone(phone)
+//                .photoUrl(photoUrl)
+//                .roles(Set.of(roleUser))
+//                .build();
+//
+//        return userRepository.save(user);
+//    }
+
+
+    private User createFacebookUser(String email, String name) {
+
+        Role roleUser = roleRepository.findByName("ROLE_USER")
+                .orElseThrow(() -> new RuntimeException("ROLE_USER no existe"));
+
+        User user = User.builder()
+                .email(email)
+                .username(name)
+                .password("") // OAuth
+                .authProvider(AuthProvider.FACEBOOK)
+                .roles(Set.of(roleUser))
+                .build();
+
+        return userRepository.save(user);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     public void logout(String refreshToken) {
 
         if (!jwtService.isTokenValid(refreshToken)) {
@@ -232,6 +340,11 @@ public class AuthService {
                         .build()
         );
     }
+
+
+
+
+
 
 
 
