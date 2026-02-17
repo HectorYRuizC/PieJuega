@@ -6,12 +6,15 @@ import com.example.PieJuega.model.User;
 import com.example.PieJuega.repository.PasswordResetCodeRepository;
 import com.example.PieJuega.repository.UserRepository;
 import com.example.PieJuega.security.JwtService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Random;
+import java.security.SecureRandom;
+
+
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +25,8 @@ public class PasswordRecoveryService {
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private static final SecureRandom secureRandom = new SecureRandom();
+
 
     /* ===============================
        1. SOLICITAR CÓDIGO
@@ -37,11 +42,16 @@ public class PasswordRecoveryService {
                         codeRepository.save(c);
                     });
 
-            String code = String.format("%04d", new Random().nextInt(10000));
+            int number = 100000 + secureRandom.nextInt(900000);
+            String rawCode = String.valueOf(number);
+
+            // 🔐 Hashear el código antes de guardarlo
+            String hashedCode = passwordEncoder.encode(rawCode);
+
 
             PasswordResetCode resetCode = PasswordResetCode.builder()
                     .email(email)
-                    .code(code)
+                    .code(hashedCode)
                     .attempts(0)
                     .used(false)
                     .revoked(false)
@@ -50,7 +60,7 @@ public class PasswordRecoveryService {
                     .build();
 
             codeRepository.save(resetCode);
-            emailService.sendPasswordRecoveryCode(email, code);
+            emailService.sendPasswordRecoveryCode(email, rawCode);
         });
 
         // Siempre OK (anti user-enumeration)
@@ -60,15 +70,12 @@ public class PasswordRecoveryService {
     /* ===============================
        2. VERIFICAR CÓDIGO
        =============================== */
+
     public String verifyCode(String email, String code) {
 
         PasswordResetCode resetCode = codeRepository
                 .findFirstByEmailAndUsedFalseAndRevokedFalse(email)
-                .orElse(null);
-
-        if (resetCode == null) {
-            throw new RuntimeException("Código inválido");
-        }
+                .orElseThrow(() -> new RuntimeException("Código inválido"));
 
         if (resetCode.getExpiresAt().isBefore(LocalDateTime.now())) {
             resetCode.setRevoked(true);
@@ -77,8 +84,8 @@ public class PasswordRecoveryService {
         }
 
 
-        // 🔴 VALIDAR PRIMERO SI ES INCORRECTO
-        if (!resetCode.getCode().equals(code)) {
+        //  VALIDAR PRIMERO SI ES INCORRECTO
+        if (!passwordEncoder.matches(code, resetCode.getCode())) {
 
             resetCode.setAttempts(resetCode.getAttempts() + 1);
 
@@ -91,13 +98,12 @@ public class PasswordRecoveryService {
             throw new RuntimeException("Código inválido");
         }
 
-        // 🟢 Código correcto
+        //  Código correcto
         String token = jwtService.generatePasswordResetToken(email);
 
         resetCode.setToken(token);
 
-        // 🔒 El código ya no puede reutilizarse
-        resetCode.setCode(null);
+
 
         codeRepository.save(resetCode);
 
