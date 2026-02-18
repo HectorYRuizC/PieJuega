@@ -8,12 +8,12 @@ import com.example.PieJuega.model.User;
 import com.example.PieJuega.repository.RevokedTokenRepository;
 import com.example.PieJuega.repository.RoleRepository;
 import com.example.PieJuega.repository.UserRepository;
-import com.example.PieJuega.security.JwtService;
 import com.example.PieJuega.security.UserDetailsImpl;
 import com.example.PieJuega.util.AuthProvider;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
+import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.ParameterizedTypeReference;
@@ -44,6 +44,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final RevokedTokenRepository revokedTokenRepository;
+    private final EmailService emailService;
 
     @Value("${google.client-id.android}")
     private String googleClientIdAndroid;
@@ -343,6 +344,55 @@ public class AuthService {
     }
 
 
+
+
+    public void sendVerificationEmail(String email) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        if (user.isVerified()) {
+            throw new RuntimeException("El usuario ya está verificado");
+        }
+
+        String token = jwtService.generateEmailVerificationToken(email);
+
+        String verificationLink = "http://localhost:8080/api/auth/verify-email?token=" + token;
+
+        emailService.sendEmail(
+                email,
+                "Verifica tu cuenta",
+                "Haz clic en el siguiente enlace para verificar tu cuenta:\n" + verificationLink
+        );
+    }
+
+
+
+
+    public void verifyEmail(String token) {
+
+        try {
+
+            if (!jwtService.isEmailVerificationToken(token)) {
+                throw new RuntimeException("Token inválido");
+            }
+
+            String email = jwtService.extractEmail(token);
+
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+            if (user.isVerified()) {
+                throw new RuntimeException("Usuario ya verificado");
+            }
+
+            user.setVerified(true);
+            userRepository.save(user);
+
+        } catch (ExpiredJwtException e) {
+            throw new RuntimeException("El enlace ha expirado");
+        }
+    }
 
 
 

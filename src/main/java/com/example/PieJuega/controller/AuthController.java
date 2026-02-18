@@ -6,6 +6,7 @@ import com.example.PieJuega.dto.request.*;
 import com.example.PieJuega.dto.response.AuthResponseDTO;
 import com.example.PieJuega.dto.response.UserResponseDTO;
 import com.example.PieJuega.model.User;
+import com.example.PieJuega.security.UserDetailsImpl;
 import com.example.PieJuega.service.AuthService;
 import com.example.PieJuega.mapper.UserMapper;
 import com.example.PieJuega.service.PasswordRecoveryService;
@@ -13,6 +14,7 @@ import com.example.PieJuega.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -111,6 +113,51 @@ public class AuthController {
         service.resetPassword(dto.getToken(), dto);
         return ResponseEntity.noContent().build();
     }
+
+
+
+
+    @GetMapping("/verify-email")
+    public ResponseEntity<String> verifyEmail(@RequestParam String token) {
+        authService.verifyEmail(token);
+        return ResponseEntity.ok("Cuenta verificada correctamente");
+    }
+
+
+
+
+    @PostMapping("/request-verification")
+    public ResponseEntity<String> requestVerification(
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+
+        authService.sendVerificationEmail(userDetails.getUsername());
+
+        return ResponseEntity.ok("Correo de verificación enviado");
+    }
+
+
+
+    @PostMapping("/resetByPhone")
+    public ResponseEntity<?> resetByPhone(
+            @RequestBody @Valid ResetByPhoneDTO dto
+    ) {
+        service.resetPasswordByPhone( dto);
+        return ResponseEntity.noContent().build();
+    }
+
+
+    @GetMapping("/phoneExist/{phone}")
+    public ResponseEntity<Void> phoneExist(@PathVariable String phone) {
+
+        boolean exists = userService.checkPhoneExists(phone);
+
+        if (!exists) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok().build();
+    }
+
 
 
 

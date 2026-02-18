@@ -43,6 +43,10 @@ public class User {
     private AuthProvider authProvider;
 
     @Column(nullable = false)
+    private boolean verified = false;
+
+
+    @Column(nullable = false)
     private String password;
 
 

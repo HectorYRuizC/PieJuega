@@ -12,9 +12,11 @@ import com.example.PieJuega.repository.RoleRepository;
 import com.example.PieJuega.repository.UserRepository;
 import com.example.PieJuega.util.AuthProvider;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.HashSet;
@@ -142,6 +144,10 @@ public class UserService {
         userRepository.save(user);
     }
 
+
+    public boolean checkPhoneExists(String phone) {
+        return userRepository.existsByPhone(phone);
+    }
 
 
 }

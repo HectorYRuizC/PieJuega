@@ -1,12 +1,11 @@
 package com.example.PieJuega.service;
 
 import com.example.PieJuega.dto.request.PasswordResetDTO;
+import com.example.PieJuega.dto.request.ResetByPhoneDTO;
 import com.example.PieJuega.model.PasswordResetCode;
 import com.example.PieJuega.model.User;
 import com.example.PieJuega.repository.PasswordResetCodeRepository;
 import com.example.PieJuega.repository.UserRepository;
-import com.example.PieJuega.security.JwtService;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -146,6 +145,31 @@ public class PasswordRecoveryService {
         resetCode.setRevoked(true);
         codeRepository.save(resetCode);
     }
+
+
+    /* ===============================
+      3. RESET CONTRASEÑA por PHONE
+      =============================== */
+    public void resetPasswordByPhone( ResetByPhoneDTO dto) {
+
+        if (!dto.getNewPassword().equals(dto.getConfirmNewPassword())) {
+            throw new RuntimeException("Las contraseñas no coinciden");
+        }
+
+        User user = userRepository.findByPhone(dto.getPhone())
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
+        userRepository.save(user);
+
+
+    }
+
+
+
+
+
+
 
 
 }

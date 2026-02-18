@@ -1,4 +1,4 @@
-package com.example.PieJuega.security;
+package com.example.PieJuega.service;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
@@ -99,9 +99,31 @@ public class JwtService {
 
 
 
+
+
     public boolean isPasswordResetToken(String token) {
         Claims claims = parseClaims(token);
         return "PASSWORD_RESET".equals(claims.get("type"));
     }
+
+
+
+
+    public String generateEmailVerificationToken(String email) {
+        return Jwts.builder()
+                .setSubject(email)
+                .claim("type", "EMAIL_VERIFICATION")
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 30)) // 30 min
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public boolean isEmailVerificationToken(String token) {
+        Claims claims = parseClaims(token);
+        return "EMAIL_VERIFICATION".equals(claims.get("type"));
+    }
+
+
 
 }

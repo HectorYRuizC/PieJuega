@@ -1,7 +1,6 @@
 package com.example.PieJuega.security;
 
-import com.example.PieJuega.security.JwtService;
-import com.example.PieJuega.security.UserDetailsImpl;
+import com.example.PieJuega.service.JwtService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
