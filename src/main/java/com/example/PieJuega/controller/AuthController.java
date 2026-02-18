@@ -4,6 +4,7 @@ import com.example.PieJuega.dto.request.PasswordRecoveryVerifyDTO;
 import com.example.PieJuega.dto.request.PasswordResetDTO;
 import com.example.PieJuega.dto.request.*;
 import com.example.PieJuega.dto.response.AuthResponseDTO;
+import com.example.PieJuega.dto.response.PhoneExistResponseDTO;
 import com.example.PieJuega.dto.response.UserResponseDTO;
 import com.example.PieJuega.model.User;
 import com.example.PieJuega.security.UserDetailsImpl;
@@ -147,16 +148,12 @@ public class AuthController {
 
 
     @GetMapping("/phoneExist/{phone}")
-    public ResponseEntity<Void> phoneExist(@PathVariable String phone) {
-
-        boolean exists = userService.checkPhoneExists(phone);
-
-        if (!exists) {
-            return ResponseEntity.notFound().build();
-        }
-
-        return ResponseEntity.ok().build();
+    public ResponseEntity<PhoneExistResponseDTO> phoneExist(
+            @PathVariable String phone
+    ) {
+        return ResponseEntity.ok(userService.getPhoneInfo(phone));
     }
+
 
 
 

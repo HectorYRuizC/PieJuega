@@ -1,6 +1,7 @@
 package com.example.PieJuega.service;
 
 import com.example.PieJuega.dto.request.ChangePasswordRequestDTO;
+import com.example.PieJuega.dto.response.PhoneExistResponseDTO;
 import com.example.PieJuega.dto.response.UserResponseDTO;
 import com.example.PieJuega.dto.request.UserUpdateRequestDTO;
 import com.example.PieJuega.exception.InvalidCredentialsException;
@@ -145,9 +146,15 @@ public class UserService {
     }
 
 
-    public boolean checkPhoneExists(String phone) {
-        return userRepository.existsByPhone(phone);
-    }
+    public PhoneExistResponseDTO getPhoneInfo(String phone) {
 
+        User user = userRepository.findByPhone(phone)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Número no asociado a ningún usuario"
+                ));
+
+        return new PhoneExistResponseDTO(user.getAuthProvider().name());
+    }
 
 }
