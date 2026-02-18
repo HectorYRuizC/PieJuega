@@ -118,7 +118,7 @@ public class AuthController {
 
 
 
-    @GetMapping("/verify-email")
+    @GetMapping("/verifyEmail")
     public ResponseEntity<String> verifyEmail(@RequestParam String token) {
         authService.verifyEmail(token);
         return ResponseEntity.ok("Cuenta verificada correctamente");
@@ -127,7 +127,7 @@ public class AuthController {
 
 
 
-    @PostMapping("/request-verification")
+    @PostMapping("/VerificationByEmail")
     public ResponseEntity<String> requestVerification(
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
 

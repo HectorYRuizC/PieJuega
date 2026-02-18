@@ -357,7 +357,7 @@ public class AuthService {
 
         String token = jwtService.generateEmailVerificationToken(email);
 
-        String verificationLink = "http://localhost:8080/api/auth/verify-email?token=" + token;
+        String verificationLink = "http://localhost:8080/api/auth/verifyEmail?token=" + token;
 
         emailService.sendEmail(
                 email,
