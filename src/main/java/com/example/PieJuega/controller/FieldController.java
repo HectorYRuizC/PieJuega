@@ -28,9 +28,10 @@ public class FieldController {
             @RequestParam(required = false) TeamFormat format,
             @RequestParam(required = false) Double latitude,
             @RequestParam(required = false) Double longitude,
+            @RequestParam(required = false) String cityCode,
             @RequestParam(required = false) String city
     ) {
-        return bookingService.getFields(query, format, latitude, longitude, city);
+        return bookingService.getFields(query, format, latitude, longitude, cityCode, city);
     }
 
     @GetMapping("/{fieldId}")

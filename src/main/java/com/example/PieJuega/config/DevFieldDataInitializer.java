@@ -89,6 +89,8 @@ public class DevFieldDataInitializer implements ApplicationRunner {
     }
 
     private void applyCoordinates(FootballField field) {
+        field.setCity("Barranquilla");
+        field.setCityCode("08001");
         double[] coordinates = switch (field.getName()) {
             case "El Tiburón" -> new double[]{10.9639, -74.7964};
             case "La Bombonera" -> new double[]{11.0008, -74.8068};
@@ -118,6 +120,7 @@ public class DevFieldDataInitializer implements ApplicationRunner {
                 .name(name)
                 .address(address)
                 .city("Barranquilla")
+                .cityCode("08001")
                 .description(description)
                 .format(format)
                 .rating(new BigDecimal(rating))

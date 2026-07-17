@@ -34,10 +34,11 @@ public class TournamentController {
             @AuthenticationPrincipal UserDetailsImpl user,
             @RequestParam(required = false) Double latitude,
             @RequestParam(required = false) Double longitude,
+            @RequestParam(required = false) String cityCode,
             @RequestParam(required = false) String city
     ) {
         return tournamentService.getUpcoming(
-                user.getId(), latitude, longitude, city
+                user.getId(), latitude, longitude, cityCode, city
         );
     }
 

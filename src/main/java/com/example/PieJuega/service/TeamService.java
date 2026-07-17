@@ -17,6 +17,7 @@ import com.example.PieJuega.util.PlayerPosition;
 import com.example.PieJuega.util.SquadRole;
 import com.example.PieJuega.util.TeamFormat;
 import com.example.PieJuega.util.GeoUtils;
+import com.example.PieJuega.util.NotificationType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -46,6 +47,8 @@ public class TeamService {
     private final TeamMemberRepository memberRepository;
     private final UserRepository userRepository;
     private final ChatService chatService;
+    private final CityCatalogService cityCatalogService;
+    private final AppNotificationService notificationService;
 
     @Transactional(readOnly = true)
     public List<PlayerSearchResponseDTO> searchPlayers(
@@ -53,11 +56,21 @@ public class TeamService {
             String query,
             Double latitude,
             Double longitude,
+            String cityCode,
             String city
     ) {
         String normalized = query == null ? "" : query.trim();
-        String normalizedCity = city == null ? "" : city.trim();
-        return userRepository.searchPlayers(currentUserId, normalized, PageRequest.of(0, 30))
+        var selectedCity = cityCatalogService.resolve(cityCode, city, null);
+        if (selectedCity.isEmpty()) {
+            return List.of();
+        }
+        return userRepository.searchPlayers(
+                        currentUserId,
+                        normalized,
+                        selectedCity.get().code(),
+                        selectedCity.get().name(),
+                        PageRequest.of(0, 30)
+                )
                 .stream()
                 .map(user -> new PlayerSearchResponseDTO(
                         user.getId(),
@@ -72,9 +85,7 @@ public class TeamService {
                         )
                 ))
                 .sorted(Comparator
-                        .comparing((PlayerSearchResponseDTO player) -> normalizedCity.isEmpty()
-                                || normalizedCity.equalsIgnoreCase(player.city()) ? 0 : 1)
-                        .thenComparing(player -> player.distanceKm() == null
+                        .comparing((PlayerSearchResponseDTO player) -> player.distanceKm() == null
                                 ? Double.MAX_VALUE
                                 : player.distanceKm())
                         .thenComparing(PlayerSearchResponseDTO::username))
@@ -167,6 +178,16 @@ public class TeamService {
         );
         team.setChatRoom(room);
         teamRepository.save(team);
+        users.stream()
+                .filter(user -> !user.getId().equals(ownerId))
+                .forEach(user -> notificationService.notifyUser(
+                        user,
+                        NotificationType.TEAM_ADDED,
+                        "Ahora haces parte de " + team.getName(),
+                        owner.getUsername() + " te añadió a la plantilla",
+                        "/teamChat/" + room.getId(),
+                        team.getId()
+                ));
         return toResponse(team);
     }
 

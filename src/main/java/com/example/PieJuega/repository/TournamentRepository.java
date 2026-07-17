@@ -15,10 +15,27 @@ import java.util.Optional;
 
 public interface TournamentRepository extends JpaRepository<Tournament, Long> {
 
+    boolean existsByField_IdAndStatusIn(
+            Long fieldId,
+            Collection<TournamentStatus> statuses
+    );
+
     @EntityGraph(attributePaths = {"field", "creator"})
-    List<Tournament> findByStatusInAndStartsAtAfterOrderByStartsAtAsc(
+    @Query("""
+        SELECT t FROM Tournament t
+        WHERE t.status IN :statuses
+          AND t.startsAt > :startsAt
+          AND (
+            t.field.cityCode = :cityCode
+            OR (t.field.cityCode IS NULL AND LOWER(t.field.city) = LOWER(:cityName))
+          )
+        ORDER BY t.startsAt ASC
+    """)
+    List<Tournament> findUpcomingByCity(
             Collection<TournamentStatus> statuses,
-            LocalDateTime startsAt
+            LocalDateTime startsAt,
+            String cityCode,
+            String cityName
     );
 
     @EntityGraph(attributePaths = {"field", "creator"})

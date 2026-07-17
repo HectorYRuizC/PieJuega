@@ -9,12 +9,13 @@ import com.example.PieJuega.exception.ResourceNotFoundException;
 import com.example.PieJuega.model.FootballField;
 import com.example.PieJuega.model.Reservation;
 import com.example.PieJuega.model.User;
+import com.example.PieJuega.mapper.FieldMapper;
 import com.example.PieJuega.repository.FootballFieldRepository;
 import com.example.PieJuega.repository.ReservationRepository;
 import com.example.PieJuega.repository.UserRepository;
 import com.example.PieJuega.util.ReservationStatus;
 import com.example.PieJuega.util.TeamFormat;
-import com.example.PieJuega.util.GeoUtils;
+import com.example.PieJuega.util.NotificationType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -28,7 +29,6 @@ import java.time.LocalDateTime;
 import java.util.EnumSet;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -41,6 +41,9 @@ public class BookingService {
     private final FootballFieldRepository fieldRepository;
     private final ReservationRepository reservationRepository;
     private final UserRepository userRepository;
+    private final CityCatalogService cityCatalogService;
+    private final AppNotificationService notificationService;
+    private final FieldMapper fieldMapper;
 
     @Transactional(readOnly = true)
     public List<FieldResponseDTO> getFields(
@@ -48,16 +51,23 @@ public class BookingService {
             TeamFormat format,
             Double latitude,
             Double longitude,
+            String cityCode,
             String city
     ) {
         String normalizedQuery = query == null ? "" : query.trim();
-        String normalizedCity = city == null ? "" : city.trim();
-        return fieldRepository.searchActive(normalizedQuery, format).stream()
-                .map(field -> toFieldResponse(field, latitude, longitude))
+        var selectedCity = cityCatalogService.resolve(cityCode, city, null);
+        if (selectedCity.isEmpty()) {
+            return List.of();
+        }
+        return fieldRepository.searchActive(
+                        normalizedQuery,
+                        format,
+                        selectedCity.get().code(),
+                        selectedCity.get().name()
+                ).stream()
+                .map(field -> fieldMapper.toResponse(field, latitude, longitude))
                 .sorted(Comparator
-                        .comparing((FieldResponseDTO field) -> normalizedCity.isEmpty()
-                                || field.city().equalsIgnoreCase(normalizedCity) ? 0 : 1)
-                        .thenComparing(field -> field.distanceKm() == null
+                        .comparing((FieldResponseDTO field) -> field.distanceKm() == null
                                 ? Double.MAX_VALUE
                                 : field.distanceKm())
                         .thenComparing(FieldResponseDTO::rating, Comparator.reverseOrder()))
@@ -69,7 +79,7 @@ public class BookingService {
         FootballField field = fieldRepository.findById(fieldId)
                 .filter(FootballField::isActive)
                 .orElseThrow(() -> new ResourceNotFoundException("Cancha no encontrada"));
-        return toFieldResponse(field, latitude, longitude);
+        return fieldMapper.toResponse(field, latitude, longitude);
     }
 
     @Transactional(readOnly = true)
@@ -139,6 +149,7 @@ public class BookingService {
             throw new ReservationConflictException("Este horario acaba de ser reservado");
         }
 
+        BigDecimal totalPrice = calculateTotalPrice(field, field.getSlotDurationMinutes());
         Reservation reservation = reservationRepository.save(Reservation.builder()
                 .field(field)
                 .user(user)
@@ -146,10 +157,18 @@ public class BookingService {
                 .endAt(endAt)
                 .contactName(request.contactName().trim())
                 .contactPhone(request.contactPhone().trim())
+                .totalPrice(totalPrice)
                 .paymentMethod(request.paymentMethod())
                 .note(blankToNull(request.note()))
                 .status(ReservationStatus.PENDING)
                 .build());
+        notificationService.notifyAdministrators(
+                NotificationType.RESERVATION_REQUEST,
+                "Nueva solicitud de reserva",
+                user.getUsername() + " solicitó " + field.getName(),
+                "/reservationsAdmin/" + reservation.getId(),
+                reservation.getId()
+        );
         return toReservationResponse(reservation);
     }
 
@@ -186,7 +205,16 @@ public class BookingService {
         }
         reservation.setStatus(ReservationStatus.CANCELLED);
         reservation.setRejectionReason(null);
-        return toReservationResponse(reservationRepository.save(reservation));
+        Reservation saved = reservationRepository.save(reservation);
+        notificationService.notifyAdministrators(
+                NotificationType.RESERVATION_CANCELLED,
+                "Reserva cancelada",
+                reservation.getUser().getUsername() + " canceló "
+                        + reservation.getField().getName(),
+                "/reservationsAdmin/" + reservation.getId(),
+                reservation.getId()
+        );
+        return toReservationResponse(saved);
     }
 
     @Transactional(readOnly = true)
@@ -211,7 +239,16 @@ public class BookingService {
         }
         reservation.setStatus(ReservationStatus.APPROVED);
         reservation.setRejectionReason(null);
-        return toReservationResponse(reservationRepository.save(reservation));
+        Reservation saved = reservationRepository.save(reservation);
+        notificationService.notifyUser(
+                reservation.getUser(),
+                NotificationType.RESERVATION_APPROVED,
+                "Reserva aprobada",
+                "Tu reserva en " + reservation.getField().getName() + " fue confirmada",
+                "/reservations/" + reservation.getId(),
+                reservation.getId()
+        );
+        return toReservationResponse(saved);
     }
 
     @Transactional
@@ -225,7 +262,17 @@ public class BookingService {
         requirePending(reservation);
         reservation.setStatus(ReservationStatus.REJECTED);
         reservation.setRejectionReason(reason.trim());
-        return toReservationResponse(reservationRepository.save(reservation));
+        Reservation saved = reservationRepository.save(reservation);
+        notificationService.notifyUser(
+                reservation.getUser(),
+                NotificationType.RESERVATION_REJECTED,
+                "Reserva no aprobada",
+                "Revisa la decisión sobre tu reserva en "
+                        + reservation.getField().getName(),
+                "/reservations/" + reservation.getId(),
+                reservation.getId()
+        );
+        return toReservationResponse(saved);
     }
 
     private void validateAvailabilityDate(LocalDate date) {
@@ -289,32 +336,6 @@ public class BookingService {
                 .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada"));
     }
 
-    private FieldResponseDTO toFieldResponse(
-            FootballField field,
-            Double latitude,
-            Double longitude
-    ) {
-        return new FieldResponseDTO(
-                field.getId(),
-                field.getName(),
-                field.getAddress(),
-                field.getCity(),
-                field.getLatitude(),
-                field.getLongitude(),
-                GeoUtils.distanceKm(latitude, longitude, field.getLatitude(), field.getLongitude()),
-                field.getDescription(),
-                field.getImageUrl(),
-                field.getFormat(),
-                field.getRating(),
-                field.getPricePerHour(),
-                field.getOpeningTime(),
-                field.getClosingTime(),
-                field.getSlotDurationMinutes(),
-                Set.copyOf(field.getFeatures()),
-                Set.copyOf(field.getOpenDays())
-        );
-    }
-
     private ReservationResponseDTO toReservationResponse(Reservation reservation) {
         FootballField field = reservation.getField();
         User user = reservation.getUser();
@@ -322,9 +343,9 @@ public class BookingService {
                 reservation.getStartAt(),
                 reservation.getEndAt()
         ).toMinutes();
-        BigDecimal totalPrice = field.getPricePerHour()
-                .multiply(BigDecimal.valueOf(durationMinutes))
-                .divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
+        BigDecimal totalPrice = reservation.getTotalPrice() == null
+                ? calculateTotalPrice(field, durationMinutes)
+                : reservation.getTotalPrice();
 
         return new ReservationResponseDTO(
                 reservation.getId(),
@@ -349,6 +370,12 @@ public class BookingService {
                 reservation.getCreatedAt(),
                 reservation.getUpdatedAt()
         );
+    }
+
+    private BigDecimal calculateTotalPrice(FootballField field, long durationMinutes) {
+        return field.getPricePerHour()
+                .multiply(BigDecimal.valueOf(durationMinutes))
+                .divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
     }
 
     private String blankToNull(String value) {

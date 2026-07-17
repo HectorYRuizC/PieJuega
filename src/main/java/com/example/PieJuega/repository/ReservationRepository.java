@@ -19,6 +19,12 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             LocalDateTime startAt
     );
 
+    boolean existsByField_IdAndStatusInAndStartAtAfter(
+            Long fieldId,
+            Collection<ReservationStatus> statuses,
+            LocalDateTime startAt
+    );
+
     List<Reservation> findByField_IdAndStatusInAndStartAtLessThanAndEndAtGreaterThan(
             Long fieldId,
             Collection<ReservationStatus> statuses,

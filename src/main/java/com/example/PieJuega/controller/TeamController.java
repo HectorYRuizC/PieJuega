@@ -33,10 +33,11 @@ public class TeamController {
             @RequestParam(defaultValue = "") String query,
             @RequestParam(required = false) Double latitude,
             @RequestParam(required = false) Double longitude,
+            @RequestParam(required = false) String cityCode,
             @RequestParam(required = false) String city
     ) {
         return teamService.searchPlayers(
-                user.getId(), query, latitude, longitude, city
+                user.getId(), query, latitude, longitude, cityCode, city
         );
     }
 

@@ -12,6 +12,7 @@ public record FieldResponseDTO(
         String name,
         String address,
         String city,
+        String cityCode,
         Double latitude,
         Double longitude,
         Double distanceKm,
@@ -24,6 +25,7 @@ public record FieldResponseDTO(
         LocalTime closingTime,
         int slotDurationMinutes,
         Set<String> features,
-        Set<DayOfWeek> openDays
+        Set<DayOfWeek> openDays,
+        boolean active
 ) {
 }

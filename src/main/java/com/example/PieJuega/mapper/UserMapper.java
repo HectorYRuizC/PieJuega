@@ -17,6 +17,8 @@ public class UserMapper {
         response.setAuthProvider(user.getAuthProvider()); // 🔑 AQUÍ
         response.setPhotoUrl(user.getPhotoUrl());
         response.setCity(user.getCity());
+        response.setDepartment(user.getDepartment());
+        response.setCityCode(user.getCityCode());
         response.setLatitude(user.getLatitude());
         response.setLongitude(user.getLongitude());
         response.setRoles(user.getRoles()

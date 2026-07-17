@@ -18,6 +18,7 @@ public record TournamentResponseDTO(
         String fieldName,
         String fieldAddress,
         String city,
+        String cityCode,
         Double latitude,
         Double longitude,
         Double distanceKm,

@@ -15,6 +15,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByPhone(String phone);
 
     @Query("""
+        SELECT DISTINCT u FROM User u
+        JOIN u.roles role
+        WHERE role.name = 'ROLE_ADMIN'
+    """)
+    List<User> findAdministrators();
+
+    @Query("""
         SELECT u FROM User u
         WHERE u.email = :identifier
            OR u.phone = :identifier
@@ -25,11 +32,21 @@ public interface UserRepository extends JpaRepository<User, Long> {
         SELECT u FROM User u
         WHERE u.id <> :currentUserId
           AND (
+            u.cityCode = :cityCode
+            OR (u.cityCode IS NULL AND LOWER(u.city) = LOWER(:cityName))
+          )
+          AND (
             :query = ''
             OR LOWER(u.username) LIKE LOWER(CONCAT('%', :query, '%'))
             OR LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%'))
           )
         ORDER BY u.username ASC
     """)
-    List<User> searchPlayers(Long currentUserId, String query, Pageable pageable);
+    List<User> searchPlayers(
+            Long currentUserId,
+            String query,
+            String cityCode,
+            String cityName,
+            Pageable pageable
+    );
 }

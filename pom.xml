@@ -62,6 +62,11 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-websocket</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>com.google.firebase</groupId>
+			<artifactId>firebase-admin</artifactId>
+			<version>9.10.0</version>
+		</dependency>
 
 
         <!-- FASE 2: Seguridad -->
@@ -95,13 +100,13 @@
         <dependency>
             <groupId>com.google.api-client</groupId>
             <artifactId>google-api-client</artifactId>
-            <version>2.4.0</version> <!-- Use the latest version from Maven Central -->
+            <version>2.7.2</version>
         </dependency>
 
         <dependency>
             <groupId>com.google.http-client</groupId>
             <artifactId>google-http-client-jackson2</artifactId>
-            <version>1.43.3</version>
+            <version>2.1.0</version>
         </dependency>
 
 

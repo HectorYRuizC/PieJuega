@@ -24,6 +24,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 
 @Entity
 @Table(
@@ -64,6 +65,9 @@ public class Reservation {
 
     @Column(name = "contact_phone", nullable = false, length = 20)
     private String contactPhone;
+
+    @Column(name = "total_price", precision = 12, scale = 2)
+    private BigDecimal totalPrice;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_method", nullable = false, length = 16)

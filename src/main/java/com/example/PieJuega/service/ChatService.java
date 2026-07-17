@@ -19,6 +19,7 @@ import com.example.PieJuega.repository.ChatRoomMemberRepository;
 import com.example.PieJuega.repository.ChatRoomRepository;
 import com.example.PieJuega.repository.UserRepository;
 import com.example.PieJuega.util.ChatMessageType;
+import com.example.PieJuega.util.NotificationType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -44,6 +45,7 @@ public class ChatService {
     private final ChatMessageRepository messageRepository;
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final AppNotificationService notificationService;
 
     @Transactional(readOnly = true)
     public List<ChatConversationResponseDTO> getConversations(Long userId) {
@@ -138,6 +140,7 @@ public class ChatService {
 
         ChatMessageResponseDTO response = toMessage(saved, senderMembership);
         publishMessage(room, response);
+        notifyMembers(room, sender, content);
         return response;
     }
 
@@ -340,6 +343,20 @@ public class ChatService {
                     event
             );
         }
+    }
+
+    private void notifyMembers(ChatRoom room, User sender, String content) {
+        memberRepository.findByRoom_IdOrderByJoinedAtAsc(room.getId()).stream()
+                .map(ChatRoomMember::getUser)
+                .filter(user -> !user.getId().equals(sender.getId()))
+                .forEach(user -> notificationService.notifyUser(
+                        user,
+                        NotificationType.CHAT_MESSAGE,
+                        room.getName(),
+                        sender.getUsername() + ": " + content,
+                        "/teamChat/" + room.getId(),
+                        room.getId()
+                ));
     }
 
     private void validateMessage(SendChatMessageRequestDTO request) {

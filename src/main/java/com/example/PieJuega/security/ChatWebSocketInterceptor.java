@@ -10,6 +10,7 @@ import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
+import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -24,6 +25,8 @@ public class ChatWebSocketInterceptor implements ChannelInterceptor {
 
     private static final Pattern ROOM_TOPIC = Pattern.compile("^/topic/chat/rooms/(\\d+)$");
     private static final Pattern USER_TOPIC = Pattern.compile("^/topic/chat/users/(\\d+)$");
+    private static final Pattern NOTIFICATION_TOPIC =
+            Pattern.compile("^/topic/notifications/users/(\\d+)$");
 
     private final JwtService jwtService;
     private final UserDetailsServiceImpl userDetailsService;
@@ -31,7 +34,13 @@ public class ChatWebSocketInterceptor implements ChannelInterceptor {
 
     @Override
     public Message<?> preSend(@NonNull Message<?> message, @NonNull MessageChannel channel) {
-        StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
+        StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(
+                message,
+                StompHeaderAccessor.class
+        );
+        if (accessor == null) {
+            return message;
+        }
 
         if (StompCommand.CONNECT.equals(accessor.getCommand())) {
             authenticate(accessor);
@@ -81,6 +90,12 @@ public class ChatWebSocketInterceptor implements ChannelInterceptor {
         Matcher userMatcher = USER_TOPIC.matcher(destination);
         if (userMatcher.matches()
                 && Long.valueOf(userMatcher.group(1)).equals(userId)) {
+            return;
+        }
+
+        Matcher notificationMatcher = NOTIFICATION_TOPIC.matcher(destination);
+        if (notificationMatcher.matches()
+                && Long.valueOf(notificationMatcher.group(1)).equals(userId)) {
             return;
         }
 

@@ -4,6 +4,7 @@ import com.example.PieJuega.model.FootballField;
 import com.example.PieJuega.util.TeamFormat;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 
@@ -12,10 +13,28 @@ import java.util.Optional;
 
 public interface FootballFieldRepository extends JpaRepository<FootballField, Long> {
 
+    @EntityGraph(attributePaths = {"features", "openDays"})
+    @Query("""
+        SELECT DISTINCT f FROM FootballField f
+        WHERE (:active IS NULL OR f.active = :active)
+          AND (
+            :query = ''
+            OR LOWER(f.name) LIKE LOWER(CONCAT('%', :query, '%'))
+            OR LOWER(f.city) LIKE LOWER(CONCAT('%', :query, '%'))
+            OR LOWER(f.address) LIKE LOWER(CONCAT('%', :query, '%'))
+          )
+        ORDER BY f.active DESC, f.name ASC
+    """)
+    List<FootballField> searchForAdmin(String query, Boolean active);
+
     @Query("""
         SELECT f FROM FootballField f
         WHERE f.active = true
           AND (:format IS NULL OR f.format = :format)
+          AND (
+            f.cityCode = :cityCode
+            OR (f.cityCode IS NULL AND LOWER(f.city) = LOWER(:cityName))
+          )
           AND (
             :query = ''
             OR LOWER(f.name) LIKE LOWER(CONCAT('%', :query, '%'))
@@ -24,7 +43,12 @@ public interface FootballFieldRepository extends JpaRepository<FootballField, Lo
           )
         ORDER BY f.rating DESC, f.name ASC
     """)
-    List<FootballField> searchActive(String query, TeamFormat format);
+    List<FootballField> searchActive(
+            String query,
+            TeamFormat format,
+            String cityCode,
+            String cityName
+    );
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT f FROM FootballField f WHERE f.id = :id AND f.active = true")

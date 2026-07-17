@@ -33,7 +33,7 @@ import java.util.Set;
 @Table(
         name = "football_fields",
         indexes = {
-                @Index(name = "idx_fields_active_city", columnList = "active, city"),
+                @Index(name = "idx_fields_active_city", columnList = "active, city_code"),
                 @Index(name = "idx_fields_format", columnList = "format")
         }
 )
@@ -56,6 +56,9 @@ public class FootballField {
 
     @Column(nullable = false, length = 80)
     private String city;
+
+    @Column(name = "city_code", length = 5)
+    private String cityCode;
 
     private Double latitude;
 

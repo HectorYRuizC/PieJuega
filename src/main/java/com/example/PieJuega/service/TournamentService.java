@@ -17,6 +17,7 @@ import com.example.PieJuega.repository.TournamentRepository;
 import com.example.PieJuega.repository.TeamMemberRepository;
 import com.example.PieJuega.repository.UserRepository;
 import com.example.PieJuega.util.GeoUtils;
+import com.example.PieJuega.util.NotificationType;
 import com.example.PieJuega.util.SquadRole;
 import com.example.PieJuega.util.TournamentStatus;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +26,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 
@@ -45,31 +45,32 @@ public class TournamentService {
     private final FootballTeamRepository teamRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final UserRepository userRepository;
+    private final CityCatalogService cityCatalogService;
+    private final AppNotificationService notificationService;
 
     @Transactional(readOnly = true)
     public List<TournamentResponseDTO> getUpcoming(
             Long requesterId,
             Double latitude,
             Double longitude,
+            String cityCode,
             String city
     ) {
         getUser(requesterId);
-        String normalizedCity = city == null ? "" : city.trim();
-        Comparator<TournamentResponseDTO> proximityOrder = Comparator
-                .comparing((TournamentResponseDTO tournament) -> cityPriority(tournament, normalizedCity))
-                .thenComparing(tournament -> tournament.distanceKm() == null
-                        ? Double.MAX_VALUE
-                        : tournament.distanceKm())
-                .thenComparing(TournamentResponseDTO::startsAt);
+        var selectedCity = cityCatalogService.resolve(cityCode, city, null);
+        if (selectedCity.isEmpty()) {
+            return List.of();
+        }
 
         return tournamentRepository
-                .findByStatusInAndStartsAtAfterOrderByStartsAtAsc(
+                .findUpcomingByCity(
                         EnumSet.of(TournamentStatus.OPEN_REGISTRATION),
-                        LocalDateTime.now()
+                        LocalDateTime.now(),
+                        selectedCity.get().code(),
+                        selectedCity.get().name()
                 )
                 .stream()
                 .map(tournament -> toResponse(tournament, latitude, longitude))
-                .sorted(proximityOrder)
                 .toList();
     }
 
@@ -124,6 +125,13 @@ public class TournamentService {
                 .prize(blankToNull(request.prize()))
                 .status(TournamentStatus.PENDING_APPROVAL)
                 .build());
+        notificationService.notifyAdministrators(
+                NotificationType.TOURNAMENT_REQUEST,
+                "Nueva propuesta de torneo",
+                creator.getUsername() + " propuso " + tournament.getName(),
+                "/reservationsAdmin/tournaments/" + tournament.getId(),
+                tournament.getId()
+        );
         return toResponse(tournament, null, null);
     }
 
@@ -162,6 +170,16 @@ public class TournamentService {
                 .team(team)
                 .registeredBy(requester)
                 .build());
+        if (!tournament.getCreator().getId().equals(userId)) {
+            notificationService.notifyUser(
+                    tournament.getCreator(),
+                    NotificationType.TOURNAMENT_REGISTRATION,
+                    "Nuevo equipo inscrito",
+                    team.getName() + " se unió a " + tournament.getName(),
+                    "/tournaments/" + tournament.getId(),
+                    tournament.getId()
+            );
+        }
         return toResponse(tournament, null, null);
     }
 
@@ -204,7 +222,16 @@ public class TournamentService {
         tournament.setStatus(TournamentStatus.OPEN_REGISTRATION);
         tournament.setApprovedBy(admin);
         tournament.setRejectionReason(null);
-        return toResponse(tournamentRepository.save(tournament), null, null);
+        Tournament saved = tournamentRepository.save(tournament);
+        notificationService.notifyUser(
+                tournament.getCreator(),
+                NotificationType.TOURNAMENT_APPROVED,
+                "Torneo publicado",
+                tournament.getName() + " ya está recibiendo equipos",
+                "/tournaments/" + tournament.getId(),
+                tournament.getId()
+        );
+        return toResponse(saved, null, null);
     }
 
     @Transactional
@@ -214,7 +241,16 @@ public class TournamentService {
         requirePending(tournament);
         tournament.setStatus(TournamentStatus.REJECTED);
         tournament.setRejectionReason(reason.trim());
-        return toResponse(tournamentRepository.save(tournament), null, null);
+        Tournament saved = tournamentRepository.save(tournament);
+        notificationService.notifyUser(
+                tournament.getCreator(),
+                NotificationType.TOURNAMENT_REJECTED,
+                "Torneo no aprobado",
+                "Revisa la decisión sobre " + tournament.getName(),
+                "/tournaments/" + tournament.getId(),
+                tournament.getId()
+        );
+        return toResponse(saved, null, null);
     }
 
     @Transactional
@@ -229,7 +265,26 @@ public class TournamentService {
             throw new IllegalArgumentException("Este torneo ya no se puede cancelar");
         }
         tournament.setStatus(TournamentStatus.CANCELLED);
-        return toResponse(tournamentRepository.save(tournament), null, null);
+        Tournament saved = tournamentRepository.save(tournament);
+        if (isAdmin(requester)) {
+            notificationService.notifyUser(
+                    tournament.getCreator(),
+                    NotificationType.TOURNAMENT_CANCELLED,
+                    "Torneo cancelado",
+                    tournament.getName() + " fue cancelado por administración",
+                    "/tournaments/" + tournament.getId(),
+                    tournament.getId()
+            );
+        } else {
+            notificationService.notifyAdministrators(
+                    NotificationType.TOURNAMENT_CANCELLED,
+                    "Propuesta cancelada",
+                    tournament.getCreator().getUsername() + " canceló " + tournament.getName(),
+                    "/reservationsAdmin/tournaments/" + tournament.getId(),
+                    tournament.getId()
+            );
+        }
+        return toResponse(saved, null, null);
     }
 
     private TournamentResponseDTO toResponse(
@@ -260,6 +315,7 @@ public class TournamentService {
                 field.getName(),
                 field.getAddress(),
                 field.getCity(),
+                field.getCityCode(),
                 field.getLatitude(),
                 field.getLongitude(),
                 GeoUtils.distanceKm(latitude, longitude, field.getLatitude(), field.getLongitude()),
@@ -275,11 +331,6 @@ public class TournamentService {
                 tournament.getCreatedAt(),
                 teams
         );
-    }
-
-    private int cityPriority(TournamentResponseDTO tournament, String city) {
-        if (city.isEmpty()) return 0;
-        return tournament.city().equalsIgnoreCase(city) ? 0 : 1;
     }
 
     private void validateDates(LocalDateTime deadline, LocalDateTime startsAt) {

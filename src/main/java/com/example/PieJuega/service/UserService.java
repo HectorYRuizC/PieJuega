@@ -31,6 +31,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final CityCatalogService cityCatalogService;
 
     public UserResponseDTO getProfile(Long userId) {
         User user = getUserOrThrow(userId);
@@ -52,13 +53,16 @@ public class UserService {
         if (userRepository.findByPhone(phone).isPresent())
             throw new ResourceAlreadyExistsException("phone already exists");
 
+        var detectedCity = cityCatalogService.resolve(null, city, null);
         User user = User.builder()
                 .username(username)
                 .email(email)
                 .phone(phone)
                 .dateBirth(dateBirth)
-                .city(city == null || city.isBlank() ? null : city.trim())
-                .authProvider(AuthProvider.LOCAL) //
+                .city(detectedCity.map(value -> value.name()).orElse(null))
+                .department(detectedCity.map(value -> value.department()).orElse(null))
+                .cityCode(detectedCity.map(value -> value.code()).orElse(null))
+                .authProvider(AuthProvider.LOCAL)
                 .password(passwordEncoder.encode(password))
                 .build();
 
@@ -118,8 +122,18 @@ public class UserService {
             user.setLatitude(request.latitude());
             user.setLongitude(request.longitude());
         }
-        if (request.city() != null && !request.city().isBlank()) {
-            user.setCity(request.city().trim());
+        var resolvedCity = cityCatalogService.resolve(
+                request.cityCode(),
+                request.city(),
+                request.department()
+        );
+        if (request.cityCode() != null && !request.cityCode().isBlank() && resolvedCity.isEmpty()) {
+            throw new IllegalArgumentException("La ciudad seleccionada no es válida");
+        }
+        if (resolvedCity.isPresent()) {
+            user.setCity(resolvedCity.get().name());
+            user.setDepartment(resolvedCity.get().department());
+            user.setCityCode(resolvedCity.get().code());
         }
         return UserMapper.toDTO(userRepository.save(user));
     }

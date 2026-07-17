@@ -16,8 +16,8 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(exclude = "roles") // 🔹 Evita ciclo infinito
-@EqualsAndHashCode(exclude = "roles") // 🔹 evitar recursión en hashCode()
+@ToString(exclude = "roles")
+@EqualsAndHashCode(exclude = "roles")
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,6 +31,12 @@ public class User {
 
     @Column(length = 80)
     private String city;
+
+    @Column(length = 80)
+    private String department;
+
+    @Column(name = "city_code", length = 5)
+    private String cityCode;
 
     private Double latitude;
 
@@ -56,9 +62,6 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-
-
-    //Relacion  ManyToMany con Role
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",
