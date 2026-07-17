@@ -1,6 +1,7 @@
 package com.example.PieJuega.service;
 
 import com.example.PieJuega.dto.request.ChangePasswordRequestDTO;
+import com.example.PieJuega.dto.request.UpdateLocationRequestDTO;
 import com.example.PieJuega.dto.response.PhoneExistResponseDTO;
 import com.example.PieJuega.dto.response.UserResponseDTO;
 import com.example.PieJuega.dto.request.UserUpdateRequestDTO;
@@ -37,7 +38,14 @@ public class UserService {
     }
 
     @Transactional
-    public User registerUser(String username, String email, String password, String phone, LocalDate dateBirth, boolean admin) {
+    public User registerUser(
+            String username,
+            String email,
+            String password,
+            String phone,
+            LocalDate dateBirth,
+            String city
+    ) {
 
         if (userRepository.findByEmail(email).isPresent())
             throw new ResourceAlreadyExistsException("Email already exists");
@@ -49,15 +57,13 @@ public class UserService {
                 .email(email)
                 .phone(phone)
                 .dateBirth(dateBirth)
+                .city(city == null || city.isBlank() ? null : city.trim())
                 .authProvider(AuthProvider.LOCAL) //
                 .password(passwordEncoder.encode(password))
                 .build();
 
         Set<Role> roles = new HashSet<>();
         roleRepository.findByName("ROLE_USER").ifPresent(roles::add);
-
-        if (admin)
-            roleRepository.findByName("ROLE_ADMIN").ifPresent(roles::add);
 
         user.setRoles(roles);
 
@@ -99,6 +105,22 @@ public class UserService {
             user.setPhotoUrl(request.getPhotoUrl());
         }
 
+        return UserMapper.toDTO(userRepository.save(user));
+    }
+
+    @Transactional
+    public UserResponseDTO updateLocation(Long userId, UpdateLocationRequestDTO request) {
+        User user = getUserOrThrow(userId);
+        if ((request.latitude() == null) != (request.longitude() == null)) {
+            throw new IllegalArgumentException("Latitud y longitud deben enviarse juntas");
+        }
+        if (request.latitude() != null) {
+            user.setLatitude(request.latitude());
+            user.setLongitude(request.longitude());
+        }
+        if (request.city() != null && !request.city().isBlank()) {
+            user.setCity(request.city().trim());
+        }
         return UserMapper.toDTO(userRepository.save(user));
     }
 

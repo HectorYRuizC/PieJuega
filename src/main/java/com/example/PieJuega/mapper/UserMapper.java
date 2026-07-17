@@ -16,6 +16,9 @@ public class UserMapper {
         response.setDateBirth(user.getDateBirth());
         response.setAuthProvider(user.getAuthProvider()); // 🔑 AQUÍ
         response.setPhotoUrl(user.getPhotoUrl());
+        response.setCity(user.getCity());
+        response.setLatitude(user.getLatitude());
+        response.setLongitude(user.getLongitude());
         response.setRoles(user.getRoles()
                 .stream()
                 .map(role -> role.getName())

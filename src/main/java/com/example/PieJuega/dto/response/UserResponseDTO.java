@@ -14,6 +14,9 @@ public class UserResponseDTO {
     private String phone;
     private LocalDate dateBirth;
     private String photoUrl;
+    private String city;
+    private Double latitude;
+    private Double longitude;
     private AuthProvider authProvider;
     private Set<String> roles;
 

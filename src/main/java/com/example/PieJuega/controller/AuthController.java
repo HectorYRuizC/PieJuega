@@ -48,7 +48,7 @@ public class AuthController {
                 request.getPassword(),
                 request.getPhone(),
                 request.getDateBirth(),
-                request.isAdmin()
+                request.getCity()
         );
         return ResponseEntity.ok(UserMapper.toDTO(user));
     }
@@ -160,4 +160,3 @@ public class AuthController {
 
 
 }
-

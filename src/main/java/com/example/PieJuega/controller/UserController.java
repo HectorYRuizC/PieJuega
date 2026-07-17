@@ -1,6 +1,7 @@
 package com.example.PieJuega.controller;
 
 import com.example.PieJuega.dto.request.ChangePasswordRequestDTO;
+import com.example.PieJuega.dto.request.UpdateLocationRequestDTO;
 import com.example.PieJuega.dto.response.UserResponseDTO;
 import com.example.PieJuega.dto.request.UserUpdateRequestDTO;
 import com.example.PieJuega.security.UserDetailsImpl;
@@ -33,6 +34,14 @@ public class UserController {
         return ResponseEntity.ok(
                 userService.updateProfile(userDetails.getId(), request)
         );
+    }
+
+    @PutMapping("/me/location")
+    public ResponseEntity<UserResponseDTO> updateLocation(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @Valid @RequestBody UpdateLocationRequestDTO request
+    ) {
+        return ResponseEntity.ok(userService.updateLocation(userDetails.getId(), request));
     }
 
     @PutMapping("/me/password")

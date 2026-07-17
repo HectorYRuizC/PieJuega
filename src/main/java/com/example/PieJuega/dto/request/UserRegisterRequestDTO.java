@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -20,6 +21,9 @@ public class UserRegisterRequestDTO {
 
 
     private String phone;
+
+    @Size(max = 80)
+    private String city;
 
 
     @NotNull

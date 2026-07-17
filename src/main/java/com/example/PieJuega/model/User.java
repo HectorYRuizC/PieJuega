@@ -29,6 +29,13 @@ public class User {
     @Column(length = 500)
     private String photoUrl;
 
+    @Column(length = 80)
+    private String city;
+
+    private Double latitude;
+
+    private Double longitude;
+
     @Column(nullable = false, unique = true)
     private String email;
 
