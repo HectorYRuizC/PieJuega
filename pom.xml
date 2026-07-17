@@ -67,6 +67,11 @@
 			<artifactId>firebase-admin</artifactId>
 			<version>9.10.0</version>
 		</dependency>
+		<dependency>
+			<groupId>com.cloudinary</groupId>
+			<artifactId>cloudinary-http5</artifactId>
+			<version>2.3.0</version>
+		</dependency>
 
 
         <!-- FASE 2: Seguridad -->
