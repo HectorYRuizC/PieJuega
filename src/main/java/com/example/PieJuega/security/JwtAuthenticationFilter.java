@@ -47,6 +47,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // 3️⃣ Cargar usuario por ID
         var userDetails = userDetailsService.loadUserById(userId);
 
+        if (!userDetails.isEnabled()) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Cuenta suspendida");
+            return;
+        }
+
         // 4️⃣ Crear autenticación
         UsernamePasswordAuthenticationToken authToken =
                 new UsernamePasswordAuthenticationToken(

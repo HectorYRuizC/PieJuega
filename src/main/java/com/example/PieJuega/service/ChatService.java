@@ -17,6 +17,7 @@ import com.example.PieJuega.model.User;
 import com.example.PieJuega.repository.ChatMessageRepository;
 import com.example.PieJuega.repository.ChatRoomMemberRepository;
 import com.example.PieJuega.repository.ChatRoomRepository;
+import com.example.PieJuega.repository.FootballTeamRepository;
 import com.example.PieJuega.repository.UserRepository;
 import com.example.PieJuega.util.ChatMessageType;
 import com.example.PieJuega.util.NotificationType;
@@ -44,13 +45,16 @@ public class ChatService {
     private final ChatRoomMemberRepository memberRepository;
     private final ChatMessageRepository messageRepository;
     private final UserRepository userRepository;
+    private final FootballTeamRepository teamRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final AppNotificationService notificationService;
 
     @Transactional(readOnly = true)
     public List<ChatConversationResponseDTO> getConversations(Long userId) {
+        Set<Long> archivedRoomIds = teamRepository.findArchivedChatRoomIds();
         return memberRepository.findByUser_IdOrderByRoom_UpdatedAtDesc(userId)
                 .stream()
+                .filter(member -> !archivedRoomIds.contains(member.getRoom().getId()))
                 .map(member -> toConversation(member.getRoom(), member))
                 .toList();
     }
@@ -244,6 +248,9 @@ public class ChatService {
     }
 
     private ChatRoomMember requireMembership(Long roomId, Long userId) {
+        if (teamRepository.existsByChatRoom_IdAndActiveFalse(roomId)) {
+            throw new ChatAccessDeniedException("Este equipo está archivado");
+        }
         return memberRepository.findByRoom_IdAndUser_Id(roomId, userId)
                 .orElseThrow(() -> new ChatAccessDeniedException(
                         "No tienes acceso a esta conversación"

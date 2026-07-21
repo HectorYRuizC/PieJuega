@@ -1,6 +1,7 @@
 package com.example.PieJuega.security;
 
 import com.example.PieJuega.repository.ChatRoomMemberRepository;
+import com.example.PieJuega.repository.FootballTeamRepository;
 import com.example.PieJuega.service.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
@@ -31,6 +32,7 @@ public class ChatWebSocketInterceptor implements ChannelInterceptor {
     private final JwtService jwtService;
     private final UserDetailsServiceImpl userDetailsService;
     private final ChatRoomMemberRepository memberRepository;
+    private final FootballTeamRepository teamRepository;
 
     @Override
     public Message<?> preSend(@NonNull Message<?> message, @NonNull MessageChannel channel) {
@@ -64,6 +66,9 @@ public class ChatWebSocketInterceptor implements ChannelInterceptor {
 
         Long userId = jwtService.extractUserId(token);
         UserDetailsImpl user = (UserDetailsImpl) userDetailsService.loadUserById(userId);
+        if (!user.isEnabled()) {
+            throw new MessagingException("Cuenta suspendida");
+        }
         accessor.setUser(new ChatPrincipal(user.getId(), user.getUsername()));
     }
 
@@ -81,7 +86,8 @@ public class ChatWebSocketInterceptor implements ChannelInterceptor {
         Matcher roomMatcher = ROOM_TOPIC.matcher(destination);
         if (roomMatcher.matches()) {
             Long roomId = Long.valueOf(roomMatcher.group(1));
-            if (!memberRepository.existsByRoom_IdAndUser_Id(roomId, userId)) {
+            if (teamRepository.existsByChatRoom_IdAndActiveFalse(roomId)
+                    || !memberRepository.existsByRoom_IdAndUser_Id(roomId, userId)) {
                 throw new MessagingException("No tienes acceso a esta conversación");
             }
             return;

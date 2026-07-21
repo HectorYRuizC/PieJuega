@@ -56,8 +56,12 @@ public class User {
     private AuthProvider authProvider;
 
     @Column(nullable = false)
+    @Builder.Default
     private boolean verified = false;
 
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    @Builder.Default
+    private boolean active = true;
 
     @Column(nullable = false)
     private String password;
@@ -68,5 +72,6 @@ public class User {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
+    @Builder.Default
     private Set<Role> roles = new HashSet<>();
 }

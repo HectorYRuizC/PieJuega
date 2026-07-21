@@ -5,7 +5,7 @@ import com.example.PieJuega.util.TeamFormat;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public record TeamResponseDTO(
+public record AdminTeamResponseDTO(
         Long id,
         String name,
         String description,
@@ -17,8 +17,9 @@ public record TeamResponseDTO(
         String formation,
         boolean active,
         Long ownerId,
+        String ownerName,
         Long chatRoomId,
-        int memberCount,
+        long memberCount,
         LocalDateTime createdAt,
         List<TeamMemberResponseDTO> members
 ) {

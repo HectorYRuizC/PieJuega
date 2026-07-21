@@ -20,6 +20,7 @@ public class UserResponseDTO {
     private Double latitude;
     private Double longitude;
     private AuthProvider authProvider;
+    private boolean active;
     private Set<String> roles;
 
 }

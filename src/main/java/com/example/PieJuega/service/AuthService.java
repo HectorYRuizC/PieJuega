@@ -229,6 +229,10 @@ public class AuthService {
        ========================= */
     private AuthResponseDTO buildAuthResponse(User user) {
 
+        if (!user.isActive()) {
+            throw new InvalidCredentialsException("Cuenta suspendida");
+        }
+
         Set<String> roles = user.getRoles()
                 .stream()
                 .map(Role::getName)

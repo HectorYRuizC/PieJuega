@@ -97,6 +97,7 @@ public class TeamService {
         return memberRepository.findByUser_IdOrderByTeam_CreatedAtDesc(userId)
                 .stream()
                 .map(TeamMember::getTeam)
+                .filter(FootballTeam::isActive)
                 .distinct()
                 .map(this::toResponse)
                 .toList();
@@ -105,6 +106,7 @@ public class TeamService {
     @Transactional(readOnly = true)
     public TeamResponseDTO getTeam(Long teamId, Long userId) {
         FootballTeam team = teamRepository.findById(teamId)
+                .filter(FootballTeam::isActive)
                 .orElseThrow(() -> new ResourceNotFoundException("Equipo no encontrado"));
         boolean isMember = memberRepository.findByTeam_IdOrderBySquadRoleAscSlotIndexAsc(teamId)
                 .stream()
@@ -140,7 +142,8 @@ public class TeamService {
         validateSquad(request.format(), requestedMembers.values().stream().toList());
 
         List<User> users = userRepository.findAllById(requestedMembers.keySet());
-        if (users.size() != requestedMembers.size()) {
+        if (users.size() != requestedMembers.size()
+                || users.stream().anyMatch(user -> !user.isActive())) {
             throw new ResourceNotFoundException("Uno o más jugadores no existen");
         }
         Map<Long, User> usersById = new HashMap<>();
@@ -255,6 +258,7 @@ public class TeamService {
                 team.getSecondaryColor(),
                 team.getFormat(),
                 team.getFormation(),
+                team.isActive(),
                 team.getOwner().getId(),
                 team.getChatRoom() == null ? null : team.getChatRoom().getId(),
                 members.size(),

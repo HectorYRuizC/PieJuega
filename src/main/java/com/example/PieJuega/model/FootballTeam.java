@@ -67,6 +67,10 @@ public class FootballTeam {
     @Column(nullable = false, length = 16)
     private String formation;
 
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    @Builder.Default
+    private boolean active = true;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;

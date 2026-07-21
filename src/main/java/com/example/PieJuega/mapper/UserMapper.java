@@ -21,6 +21,7 @@ public class UserMapper {
         response.setCityCode(user.getCityCode());
         response.setLatitude(user.getLatitude());
         response.setLongitude(user.getLongitude());
+        response.setActive(user.isActive());
         response.setRoles(user.getRoles()
                 .stream()
                 .map(role -> role.getName())

@@ -16,15 +16,23 @@ public class UserDetailsImpl implements UserDetails, OAuth2User {
     private final String email;
     private final String password;
     private final Set<String> roles;
+    private final boolean active;
 
     // Map para atributos OAuth2
     private Map<String, Object> attributes;
 
-    private     UserDetailsImpl(Long id, String email, String password, Set<String> roles) {
+    private UserDetailsImpl(
+            Long id,
+            String email,
+            String password,
+            Set<String> roles,
+            boolean active
+    ) {
         this.id = id;
         this.email = email;
         this.password = password;
         this.roles = roles;
+        this.active = active;
     }
 
 
@@ -34,7 +42,13 @@ public class UserDetailsImpl implements UserDetails, OAuth2User {
                 .map(role -> role.getName())
                 .collect(Collectors.toSet());
 
-        return new UserDetailsImpl(user.getId(), user.getEmail(), user.getPassword(), roleNames);
+        return new UserDetailsImpl(
+                user.getId(),
+                user.getEmail(),
+                user.getPassword(),
+                roleNames,
+                user.isActive()
+        );
     }
 
     // Para construir UserDetails a partir de un OAuth2User
@@ -73,7 +87,7 @@ public class UserDetailsImpl implements UserDetails, OAuth2User {
     @Override public boolean isAccountNonExpired() { return true; }
     @Override public boolean isAccountNonLocked() { return true; }
     @Override public boolean isCredentialsNonExpired() { return true; }
-    @Override public boolean isEnabled() { return true; }
+    @Override public boolean isEnabled() { return active; }
 
     @Override
     public String getName() {
