@@ -57,7 +57,10 @@ public class SecurityConfig {
                                 "/api/auth/**",
                                 "/oauth2/**",
                                 "/login/oauth2/**",
-                                "/ws/**"
+                                "/ws/**",
+                                // Necesario para que los errores HTTP (dispatch a /error)
+                                // no devuelvan 403 vacío cuando una excepción no está mapeada.
+                                "/error"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

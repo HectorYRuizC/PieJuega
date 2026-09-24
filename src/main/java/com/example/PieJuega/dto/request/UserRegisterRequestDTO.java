@@ -32,7 +32,4 @@ public class UserRegisterRequestDTO {
 
     @NotBlank
     private String password;
-
-    @NotNull
-    private boolean admin;
 }

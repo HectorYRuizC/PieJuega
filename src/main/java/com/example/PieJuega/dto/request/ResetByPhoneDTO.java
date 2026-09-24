@@ -13,4 +13,7 @@ public class ResetByPhoneDTO {
     private String newPassword;
     @NotBlank
     private String confirmNewPassword;
+    /** ID token de Firebase emitido tras verificar el código SMS. Obligatorio. */
+    @NotBlank
+    private String idToken;
 }

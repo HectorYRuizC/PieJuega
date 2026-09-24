@@ -6,6 +6,7 @@ import com.example.PieJuega.dto.request.*;
 import com.example.PieJuega.dto.response.AuthResponseDTO;
 import com.example.PieJuega.dto.response.PhoneExistResponseDTO;
 import com.example.PieJuega.dto.response.UserResponseDTO;
+import com.example.PieJuega.exception.InvalidCredentialsException;
 import com.example.PieJuega.model.User;
 import com.example.PieJuega.security.UserDetailsImpl;
 import com.example.PieJuega.service.AuthService;
@@ -89,7 +90,9 @@ public class AuthController {
 
 
 
-    @PostMapping("/recovety")
+    // Alias antiguo "recovety" (typo histórico) mantenido por compatibilidad;
+    // el cliente ya usa /recovery.
+    @PostMapping({"/recovery", "/recovety"})
     public ResponseEntity<?> request(
             @RequestBody @Valid PasswordRecoveryRequestDTO dto
     ) {
@@ -127,9 +130,13 @@ public class AuthController {
 
 
 
-    @PostMapping("/VerificationByEmail")
+    @PostMapping("/verification-email")
     public ResponseEntity<String> requestVerification(
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
+
+        if (userDetails == null) {
+            throw new InvalidCredentialsException("Autenticación requerida");
+        }
 
         authService.sendVerificationEmail(userDetails.getUsername());
 

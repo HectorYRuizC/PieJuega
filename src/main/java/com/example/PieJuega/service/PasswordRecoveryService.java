@@ -6,6 +6,7 @@ import com.example.PieJuega.model.PasswordResetCode;
 import com.example.PieJuega.model.User;
 import com.example.PieJuega.repository.PasswordResetCodeRepository;
 import com.example.PieJuega.repository.UserRepository;
+import com.example.PieJuega.security.FirebasePhoneTokenVerifier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ public class PasswordRecoveryService {
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final FirebasePhoneTokenVerifier firebasePhoneTokenVerifier;
     private static final SecureRandom secureRandom = new SecureRandom();
 
 
@@ -59,7 +61,12 @@ public class PasswordRecoveryService {
                     .build();
 
             codeRepository.save(resetCode);
-            emailService.sendPasswordRecoveryCode(email, rawCode);
+            try {
+                emailService.sendPasswordRecoveryCode(email, rawCode);
+            } catch (RuntimeException mailError) {
+                // El código ya quedó persistido; no propagamos fallos de SMTP para
+                // mantener la respuesta anti user-enumeration (siempre 200).
+            }
         });
 
         // Siempre OK (anti user-enumeration)
@@ -156,12 +163,20 @@ public class PasswordRecoveryService {
             throw new RuntimeException("Las contraseñas no coinciden");
         }
 
+        // Verificación server-side: el ID token de Firebase prueba que el dueño
+        // del teléfono completó el reto por SMS. Sin esto, cualquiera podría
+        // tomar el control de cualquier cuenta con solo conocer el número.
+        String verifiedPhone = firebasePhoneTokenVerifier.verifyAndGetPhone(dto.getIdToken());
+        if (!firebasePhoneTokenVerifier.samePhone(verifiedPhone, dto.getPhone())) {
+            throw new IllegalArgumentException(
+                    "El número verificado no corresponde al teléfono indicado");
+        }
+
         User user = userRepository.findByPhone(dto.getPhone())
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
         userRepository.save(user);
-
 
     }
 

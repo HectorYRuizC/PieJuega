@@ -19,9 +19,9 @@ public interface FootballFieldRepository extends JpaRepository<FootballField, Lo
         WHERE (:active IS NULL OR f.active = :active)
           AND (
             :query = ''
-            OR LOWER(f.name) LIKE LOWER(CONCAT('%', :query, '%'))
-            OR LOWER(f.city) LIKE LOWER(CONCAT('%', :query, '%'))
-            OR LOWER(f.address) LIKE LOWER(CONCAT('%', :query, '%'))
+            OR LOWER(function('unaccent', f.name)) LIKE LOWER(function('unaccent', CONCAT('%', :query, '%')))
+            OR LOWER(function('unaccent', f.city)) LIKE LOWER(function('unaccent', CONCAT('%', :query, '%')))
+            OR LOWER(function('unaccent', f.address)) LIKE LOWER(function('unaccent', CONCAT('%', :query, '%')))
           )
         ORDER BY f.active DESC, f.name ASC
     """)
@@ -37,9 +37,9 @@ public interface FootballFieldRepository extends JpaRepository<FootballField, Lo
           )
           AND (
             :query = ''
-            OR LOWER(f.name) LIKE LOWER(CONCAT('%', :query, '%'))
-            OR LOWER(f.city) LIKE LOWER(CONCAT('%', :query, '%'))
-            OR LOWER(f.address) LIKE LOWER(CONCAT('%', :query, '%'))
+            OR LOWER(function('unaccent', f.name)) LIKE LOWER(function('unaccent', CONCAT('%', :query, '%')))
+            OR LOWER(function('unaccent', f.city)) LIKE LOWER(function('unaccent', CONCAT('%', :query, '%')))
+            OR LOWER(function('unaccent', f.address)) LIKE LOWER(function('unaccent', CONCAT('%', :query, '%')))
           )
         ORDER BY f.rating DESC, f.name ASC
     """)
