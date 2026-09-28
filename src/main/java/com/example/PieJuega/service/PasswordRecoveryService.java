@@ -24,6 +24,7 @@ public class PasswordRecoveryService {
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final FirebasePhoneVerifier firebasePhoneVerifier;
     private static final SecureRandom secureRandom = new SecureRandom();
 
 
@@ -150,19 +151,32 @@ public class PasswordRecoveryService {
     /* ===============================
       3. RESET CONTRASEÑA por PHONE
       =============================== */
-    public void resetPasswordByPhone( ResetByPhoneDTO dto) {
+    public void resetPasswordByPhone(ResetByPhoneDTO dto) {
 
         if (!dto.getNewPassword().equals(dto.getConfirmNewPassword())) {
             throw new RuntimeException("Las contraseñas no coinciden");
         }
 
-        User user = userRepository.findByPhone(dto.getPhone())
+        // 🔐 Solo se permite resetear si el teléfono fue verificado vía Firebase
+        // Phone Auth (SMS). Sin esto, cualquiera podría cambiar la contraseña
+        // de otra cuenta solo conociendo su número.
+        String verifiedPhone = firebasePhoneVerifier.verifyPhoneIdToken(dto.getFirebaseIdToken());
+
+        String requestedPhone = normalizePhone(dto.getPhone());
+        String verified = normalizePhone(verifiedPhone);
+        if (!requestedPhone.equals(verified)) {
+            throw new RuntimeException("El teléfono no coincide con el número verificado");
+        }
+
+        User user = userRepository.findByPhone(requestedPhone)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
         userRepository.save(user);
+    }
 
-
+    private String normalizePhone(String phone) {
+        return phone.replaceAll("\\D", "");
     }
 
 

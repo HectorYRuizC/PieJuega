@@ -5,6 +5,7 @@ import com.example.PieJuega.dto.request.UpdateLocationRequestDTO;
 import com.example.PieJuega.dto.response.UserResponseDTO;
 import com.example.PieJuega.dto.request.UserUpdateRequestDTO;
 import com.example.PieJuega.security.UserDetailsImpl;
+import com.example.PieJuega.service.AuthService;
 import com.example.PieJuega.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService userService;
+    private final AuthService authService;
 
     @GetMapping("/me")
     public ResponseEntity<UserResponseDTO> me(
@@ -47,15 +49,17 @@ public class UserController {
     @PutMapping("/me/password")
     public ResponseEntity<Void> changePassword(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @RequestBody ChangePasswordRequestDTO request
+            @Valid @RequestBody ChangePasswordRequestDTO request
     ) {
         userService.changePassword(userDetails.getId(), request);
         return ResponseEntity.noContent().build();
     }
 
-
-
-
-
-
+    @PostMapping("/me/verify-email")
+    public ResponseEntity<String> requestVerification(
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        authService.sendVerificationEmail(userDetails.getUsername());
+        return ResponseEntity.ok("Correo de verificación enviado");
+    }
 }

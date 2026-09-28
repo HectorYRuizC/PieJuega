@@ -35,8 +35,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = authHeader.substring(7);
 
-        // 1️⃣ Validación básica del token
-        if (!jwtService.isTokenValid(token)) {
+        // 1️⃣ Validación básica del token (solo ACCESS tokens)
+        //    Un refresh token jamás debe ser aceptado como access token.
+        if (!jwtService.isTokenValid(token) || !jwtService.isAccessToken(token)) {
             filterChain.doFilter(request, response);
             return;
         }

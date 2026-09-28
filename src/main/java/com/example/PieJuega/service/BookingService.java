@@ -135,7 +135,9 @@ public class BookingService {
                 .orElseThrow(() -> new ResourceNotFoundException("Cancha no encontrada"));
 
         LocalDateTime startAt = request.startAt().withSecond(0).withNano(0);
-        LocalDateTime endAt = startAt.plusMinutes(field.getSlotDurationMinutes());
+        LocalDateTime endAt = request.endAt() == null
+                ? startAt.plusMinutes(field.getSlotDurationMinutes())
+                : request.endAt().withSecond(0).withNano(0);
         validateReservationTime(field, startAt, endAt);
 
         boolean occupied = reservationRepository
@@ -146,10 +148,13 @@ public class BookingService {
                         startAt
                 );
         if (occupied) {
-            throw new ReservationConflictException("Este horario acaba de ser reservado");
+            throw new ReservationConflictException("Alguno de los turnos seleccionados acaba de ser reservado");
         }
 
-        BigDecimal totalPrice = calculateTotalPrice(field, field.getSlotDurationMinutes());
+        BigDecimal totalPrice = calculateTotalPrice(
+                field,
+                Duration.between(startAt, endAt).toMinutes()
+        );
         Reservation reservation = reservationRepository.save(Reservation.builder()
                 .field(field)
                 .user(user)
@@ -291,6 +296,9 @@ public class BookingService {
         if (!startAt.isAfter(now)) {
             throw new IllegalArgumentException("La reserva debe ser para una fecha futura");
         }
+        if (!endAt.isAfter(startAt) || !endAt.toLocalDate().equals(startAt.toLocalDate())) {
+            throw new IllegalArgumentException("La hora de fin debe ser posterior a la de inicio y del mismo día");
+        }
         if (startAt.toLocalDate().isAfter(LocalDate.now().plusDays(MAX_ADVANCE_DAYS))) {
             throw new IllegalArgumentException("Solo puedes reservar con 60 días de anticipación");
         }
@@ -301,9 +309,11 @@ public class BookingService {
         LocalDateTime opening = startAt.toLocalDate().atTime(field.getOpeningTime());
         LocalDateTime closing = startAt.toLocalDate().atTime(field.getClosingTime());
         long minutesFromOpening = Duration.between(opening, startAt).toMinutes();
+        long durationMinutes = Duration.between(startAt, endAt).toMinutes();
         if (startAt.isBefore(opening)
                 || endAt.isAfter(closing)
-                || minutesFromOpening % field.getSlotDurationMinutes() != 0) {
+                || minutesFromOpening % field.getSlotDurationMinutes() != 0
+                || durationMinutes % field.getSlotDurationMinutes() != 0) {
             throw new IllegalArgumentException("El horario no corresponde a un turno disponible");
         }
     }

@@ -67,7 +67,12 @@ public class AuthController {
             @RequestBody @Valid FacebookLoginRequestDTO dto
     ) {
         return ResponseEntity.ok(
-                authService.loginWithFacebook(dto.getAccessToken(), dto.getPhotoUrl())
+                authService.loginWithFacebook(
+                        dto.getAccessToken(),
+                        dto.getPhotoUrl(),
+                        dto.getPhone(),
+                        dto.getDateBirth()
+                )
         );
     }
 
@@ -89,7 +94,7 @@ public class AuthController {
 
 
 
-    @PostMapping("/recovety")
+    @PostMapping("/recovery")
     public ResponseEntity<?> request(
             @RequestBody @Valid PasswordRecoveryRequestDTO dto
     ) {
@@ -125,19 +130,6 @@ public class AuthController {
     }
 
 
-
-
-    @PostMapping("/VerificationByEmail")
-    public ResponseEntity<String> requestVerification(
-            @AuthenticationPrincipal UserDetailsImpl userDetails) {
-
-        authService.sendVerificationEmail(userDetails.getUsername());
-
-        return ResponseEntity.ok("Correo de verificación enviado");
-    }
-
-
-
     @PostMapping("/resetByPhone")
     public ResponseEntity<?> resetByPhone(
             @RequestBody @Valid ResetByPhoneDTO dto
@@ -151,6 +143,11 @@ public class AuthController {
     public ResponseEntity<PhoneExistResponseDTO> phoneExist(
             @PathVariable String phone
     ) {
+        // Público por diseño: la app lo consulta antes del envío de SMS para
+        // evitar costos de Firebase. Trade-off conocido: revela si un número
+        // está registrado y con qué proveedor. El reset de contraseña por
+        // teléfono está protegido por verificación SMS de Firebase (ver
+        // PasswordRecoveryService.resetPasswordByPhone).
         return ResponseEntity.ok(userService.getPhoneInfo(phone));
     }
 

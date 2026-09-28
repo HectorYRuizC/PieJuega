@@ -142,6 +142,9 @@ public class TournamentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Torneo no encontrado"));
         FootballTeam team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new ResourceNotFoundException("Equipo no encontrado"));
+        if (!team.isActive()) {
+            throw new IllegalArgumentException("El equipo está inactivo y no puede inscribirse");
+        }
         requireTeamOwner(team, userId);
         if (tournament.getStatus() != TournamentStatus.OPEN_REGISTRATION) {
             throw new IllegalArgumentException("El torneo no está recibiendo inscripciones");

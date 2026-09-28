@@ -13,4 +13,6 @@ public class ResetByPhoneDTO {
     private String newPassword;
     @NotBlank
     private String confirmNewPassword;
+    @NotBlank(message = "El token de verificación de Firebase es requerido")
+    private String firebaseIdToken;
 }

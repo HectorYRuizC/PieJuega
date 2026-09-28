@@ -3,11 +3,13 @@ package com.example.PieJuega.config;
 import com.example.PieJuega.model.Role;
 import com.example.PieJuega.repository.RoleRepository;
 import com.example.PieJuega.util.RoleName;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@Slf4j
 public class DataInitializer {
     @Bean
     CommandLineRunner initRoles(RoleRepository roleRepository) {
@@ -18,7 +20,7 @@ public class DataInitializer {
                     roleRepository.save(Role.builder()
                             .name(roleName.name())
                             .build());
-                    System.out.println("Role creado: " + roleName.name());
+                    log.info("Role creado: {}", roleName.name());
                 }
             }
         };

@@ -30,6 +30,7 @@ public class JwtService {
                 .setSubject(userId.toString())
                 .claim("email", email)
                 .claim("roles", roles)
+                .claim("type", "ACCESS")
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + accessExpiration))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
@@ -39,6 +40,7 @@ public class JwtService {
     public String generateRefreshToken(Long userId) {
         return Jwts.builder()
                 .setSubject(userId.toString())
+                .claim("type", "REFRESH")
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + refreshExpiration))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
@@ -65,6 +67,24 @@ public class JwtService {
         try {
             Long tokenUserId = extractUserId(token);
             return tokenUserId.equals(userId) && !isTokenExpired(token);
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    /** Returns true only for tokens issued as ACCESS tokens. */
+    public boolean isAccessToken(String token) {
+        try {
+            return "ACCESS".equals(parseClaims(token).get("type"));
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    /** Returns true only for tokens issued as REFRESH tokens. */
+    public boolean isRefreshToken(String token) {
+        try {
+            return "REFRESH".equals(parseClaims(token).get("type"));
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }

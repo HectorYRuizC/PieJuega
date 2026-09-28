@@ -30,9 +30,12 @@ public class DevFieldDataInitializer implements ApplicationRunner {
     @Transactional
     public void run(ApplicationArguments args) {
         if (fieldRepository.count() > 0) {
-            List<FootballField> fields = fieldRepository.findAll();
-            fields.forEach(this::applyCoordinates);
-            fieldRepository.saveAll(fields);
+            // Nunca sobrescribir city/cityCode/coordenadas de canchas existentes
+            // (podrían haber sido creadas/editadas por el admin en otra ciudad).
+            // Solo completamos coordenadas faltantes de las canchas sembradas.
+            fieldRepository.findAll().stream()
+                    .filter(field -> field.getLatitude() == null || field.getLongitude() == null)
+                    .forEach(this::applyCoordinates);
             return;
         }
 
@@ -89,8 +92,6 @@ public class DevFieldDataInitializer implements ApplicationRunner {
     }
 
     private void applyCoordinates(FootballField field) {
-        field.setCity("Barranquilla");
-        field.setCityCode("08001");
         double[] coordinates = switch (field.getName()) {
             case "El Tiburón" -> new double[]{10.9639, -74.7964};
             case "La Bombonera" -> new double[]{11.0008, -74.8068};

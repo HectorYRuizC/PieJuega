@@ -24,6 +24,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.example.PieJuega.mapper.UserMapper;
 import org.springframework.web.client.RestTemplate;
@@ -55,6 +56,12 @@ public class AuthService {
 
     @Value("${google.client-id.web}")
     private String webClientId;
+
+    @Value("${jwt.refresh-token-expiration}")
+    private long refreshTokenExpiration;
+
+    @Value("${app.base-url}")
+    private String appBaseUrl;
 
 
     // luego en loginWithGoogle:
@@ -129,9 +136,15 @@ public class AuthService {
 
         String email = payload.getEmail();
         String name = (String) payload.get("name");
+        if (name == null || name.isBlank()) {
+            // Evitar username null (viola NOT NULL y rompe el registro con 500)
+            name = email.split("@")[0];
+        }
+
+        String safeName = name;
 
         User user = userRepository.findByEmail(email)
-                .orElseGet(() -> createGoogleUser(email, name,dateBirth,phone,photoUrl));
+                .orElseGet(() -> createGoogleUser(email, safeName,dateBirth,phone,photoUrl));
 
         Set<String> roles = user.getRoles()
                 .stream()
@@ -144,30 +157,36 @@ public class AuthService {
 
 
 
-    public AuthResponseDTO loginWithFacebook(String accessToken, String photoUr) {
+    public AuthResponseDTO loginWithFacebook(String accessToken, String photoUrl,
+                                             String phone, LocalDate dateBirth) {
 
         String url = "https://graph.facebook.com/me?fields=id,name,email&access_token=" + accessToken;
 
         RestTemplate restTemplate = new RestTemplate();
 
-        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
-                url,
-                HttpMethod.GET,
-                null,
-                new ParameterizedTypeReference<>() {}
-        );
+        ResponseEntity<Map<String, Object>> response;
+        try {
+            response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    null,
+                    new ParameterizedTypeReference<>() {}
+            );
+        } catch (Exception e) {
+            throw new InvalidCredentialsException("Token de Facebook inválido");
+        }
 
         Map<String, Object> body = response.getBody();
 
         if (body == null || body.get("email") == null) {
-            throw new RuntimeException("Facebook no proporcionó email válido");
+            throw new InvalidCredentialsException("Facebook no proporcionó un email válido");
         }
 
         String email = body.get("email").toString();
         String name = body.get("name") != null ? body.get("name").toString() : "Facebook User";
 
         User user = userRepository.findByEmail(email)
-                .orElseGet(() -> createFacebookUser(email, name, photoUr));
+                .orElseGet(() -> createFacebookUser(email, name, photoUrl, phone, dateBirth));
 
         return buildAuthResponse(user);
     }
@@ -202,8 +221,9 @@ public class AuthService {
             throw new InvalidCredentialsException("Refresh token revocado");
         }
 
-        // 2️ Validación básica del token (firma, expiración)
-        if (!jwtService.isTokenValid(refreshToken)) {
+        // 2️ Validación básica del token (firma, expiración y tipo)
+        if (!jwtService.isTokenValid(refreshToken)
+                || !jwtService.isRefreshToken(refreshToken)) {
             throw new InvalidCredentialsException("Refresh token inválido");
         }
 
@@ -219,7 +239,12 @@ public class AuthService {
             throw new InvalidCredentialsException("Refresh token inválido");
         }
 
-        // 6️ Generar nuevo access token (refresh se reutiliza)
+        // 6️ Rotación: revocar el refresh token usado y emitir uno nuevo.
+        //    Si un token ya usado se reutiliza (replay), el check de revocación
+        //    del paso 1 lo rechaza.
+        revokeToken(refreshToken);
+
+        // 7️ Generar nuevos tokens (access + refresh rotado)
         return buildAuthResponse(user);
     }
 
@@ -298,7 +323,8 @@ public class AuthService {
 //    }
 
 
-    private User createFacebookUser(String email, String name, String photoUrl ) {
+    private User createFacebookUser(String email, String name, String photoUrl,
+                                    String phone, LocalDate dateBirth) {
 
         Role roleUser = roleRepository.findByName("ROLE_USER")
                 .orElseThrow(() -> new RuntimeException("ROLE_USER no existe"));
@@ -308,6 +334,8 @@ public class AuthService {
                 .username(name)
                 .password("") // OAuth
                 .photoUrl(photoUrl)
+                .phone(phone)
+                .dateBirth(dateBirth)
                 .authProvider(AuthProvider.FACEBOOK)
                 .roles(Set.of(roleUser))
                 .build();
@@ -339,12 +367,26 @@ public class AuthService {
             return; // ya fue revocado
         }
 
+        revokeToken(refreshToken);
+    }
+
+    private void revokeToken(String refreshToken) {
         revokedTokenRepository.save(
                 RevokedToken.builder()
                         .token(refreshToken)
                         .revokedAt(Instant.now())
                         .build()
         );
+    }
+
+    /**
+     * Limpieza diaria de refresh tokens revocados que ya superaron su vida útil.
+     * Evita que la tabla revoked_tokens crezca indefinidamente.
+     */
+    @Scheduled(cron = "0 0 3 * * *")
+    public void cleanupExpiredRevokedTokens() {
+        Instant cutoff = Instant.now().minusMillis(refreshTokenExpiration);
+        revokedTokenRepository.deleteByRevokedAtBefore(cutoff);
     }
 
 
@@ -361,7 +403,7 @@ public class AuthService {
 
         String token = jwtService.generateEmailVerificationToken(email);
 
-        String verificationLink = "http://localhost:8080/api/auth/verifyEmail?token=" + token;
+        String verificationLink = appBaseUrl + "/api/auth/verifyEmail?token=" + token;
 
         emailService.sendEmail(
                 email,

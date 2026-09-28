@@ -13,6 +13,7 @@ public record CreateReservationRequestDTO(
         @NotNull(message = "La cancha es obligatoria") Long fieldId,
         @NotNull(message = "La fecha y hora son obligatorias")
         @Future(message = "La reserva debe ser para una fecha futura") LocalDateTime startAt,
+        LocalDateTime endAt,
         @NotBlank(message = "El nombre de contacto es obligatorio")
         @Size(max = 100, message = "El nombre no puede superar 100 caracteres") String contactName,
         @NotBlank(message = "El teléfono de contacto es obligatorio")
