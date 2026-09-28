@@ -32,5 +32,4 @@ public class UserRegisterRequestDTO {
 
     @NotBlank
     private String password;
-
 }

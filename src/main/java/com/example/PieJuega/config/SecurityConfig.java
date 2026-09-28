@@ -50,7 +50,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/auth/**",
-                                "/ws/**"
+                                "/ws/**",
+                                // Necesario para que los errores HTTP (dispatch a /error)
+                                // no devuelvan 403 vacío cuando una excepción no está mapeada.
+                                "/error"
                         ).permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()

@@ -43,3 +43,8 @@ src/main/resources/application-prod.properties
 .env
 .env.*
 !.env.example
+
+# Dev/test artifacts
+backend_run.log
+scripts/.smoke_tokens.json
+scripts/__pycache__/

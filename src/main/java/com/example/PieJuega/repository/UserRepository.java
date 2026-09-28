@@ -61,8 +61,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
           )
           AND (
             :query = ''
-            OR LOWER(u.username) LIKE LOWER(CONCAT('%', :query, '%'))
-            OR LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%'))
+            OR LOWER(function('unaccent', u.username)) LIKE LOWER(function('unaccent', CONCAT('%', :query, '%')))
+            OR LOWER(function('unaccent', u.email)) LIKE LOWER(function('unaccent', CONCAT('%', :query, '%')))
           )
         ORDER BY u.username ASC
     """)

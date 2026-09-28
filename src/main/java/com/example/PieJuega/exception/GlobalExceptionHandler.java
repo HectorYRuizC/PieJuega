@@ -66,6 +66,19 @@ public class GlobalExceptionHandler {
         return errorResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
+    // Reglas de negocio violadas en caliente (email/teléfono duplicado al editar perfil, etc.)
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<?> handleConflict(IllegalStateException ex) {
+        return errorResponse(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    // Última red: nunca devolver un error sin cuerpo JSON al cliente
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<?> handleUnexpected(Exception ex) {
+        return errorResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+                ex.getMessage() == null ? "Error inesperado" : ex.getMessage());
+    }
+
     @ExceptionHandler(MediaStorageException.class)
     public ResponseEntity<?> handleUnavailableService(MediaStorageException ex) {
         return errorResponse(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
